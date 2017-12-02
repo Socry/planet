@@ -1,0 +1,1049 @@
+<html lang="en"><head>
+		<title>Asu ÐÇÇò</title>
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+		<style type="text/css">
+			body {
+				color: #eee;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #000000;
+				margin: 0px;
+				padding: 0px;
+
+				overflow: hidden;
+
+			}
+
+			#info {
+				position: absolute;
+				top: 5px;
+				width: 100%;
+				padding: 5px 0px;
+				text-shadow:1px 1px 6px rgba(0,0,0,0.75);
+			}
+
+			a {
+				color: #ffffff;
+			}
+
+			.key {
+				color: #fff;
+			}
+
+			.button {
+				background: #000;
+				color: #fff;
+				display: inline-block;
+				cursor: pointer;
+				width: 10em;
+				padding: 0.25em 0.5em;
+				z-index: 100;
+				position: absolute;
+				right: 0;
+				top: 0;
+			}
+
+			.button:hover {
+				color: #ff0;
+			}
+
+			#i1, #i2 { margin-top: 0.5em }
+
+			#loading { font-weight: bold; background: #a0a; color: #fff; padding: 0.25em 1em; position: absolute; top: 0px; right: 0px; z-index: 200 }
+
+			#stats { position: absolute; top:10px; left: 5px }
+			#stats #fps { background: transparent !important }
+			#stats #fps #fpsText { color: #ccc !important }
+			#stats #fps #fpsGraph { display: none }
+		</style>
+	</head>
+	<body>
+		
+
+		<div id="container"></div>
+
+		
+
+		<script src="xg.min.nb.js" tppabs="http://alteredqualia.com/xg/examples/js/xg.min.nb.js"></script>
+		<script src="stats.min.js" tppabs="http://alteredqualia.com/xg/examples/js/libs/stats.min.js"></script>
+		<script src="lzma.js" tppabs="http://alteredqualia.com/xg/examples/js/libs/lzma.js"></script>
+
+		<script>
+
+			var loadingElement = document.getElementById( 'loading' );
+			var infoElement = document.getElementById( 'info' );
+
+			var hudVisible = true;
+
+			//
+
+			if ( ! Detector.webgl ) {
+
+				Detector.addGetWebGLMessage( { fallbackImg: "nebula_artefact.jpg"/*tpa=http://alteredqualia.com/xg/examples/img/nebula_artefact.jpg*/ } );
+
+				infoElement.style.display = "none";
+				loadingElement.style.display = "none";
+
+			} else {
+
+			var SCALE = 1.0;
+			var MARGIN = 0;
+			var BRIGHTNESS = 4;
+
+			var WIDTH = window.innerWidth;
+			var HEIGHT = window.innerHeight - 2 * MARGIN;
+
+			var ULTRA_THRESHOLD = 1000;
+
+			//
+
+			var rtPick;
+			var pickScene;
+
+			var rtSimulationCurrent;
+			var rtSimulationOld;
+
+			var simulationUniforms;
+
+			//
+
+			var compressor = new LZMA( "lzma_worker.js"/*tpa=http://alteredqualia.com/xg/examples/js/libs/lzma_worker.js*/ );
+			var permalinkElement = document.getElementById( "permalink" );
+
+			//
+
+			var presets = [
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.11,1,1],"intensity":0.7,"time":1,"scaleMultiplier":1,"rotation":[0,0,0]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.4000000000000001,1,0.85],"intensity":0.7,"time":1000,"scaleMultiplier":1,"rotation":[0,0.5,0]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6,1,1],"intensity":0.7,"time":1000,"scaleMultiplier":0.9998999999999999,"rotation":[0,0.5,0]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6,1,1],"intensity":0.7,"time":1000,"scaleMultiplier":0.9998999999999999,"rotation":[0,0.5,0]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.9478767772670835,0.6874515123199672,0.6971106238197535],"intensity":0.7,"time":52.375,"scaleMultiplier":0.6378250805048106,"rotation":[0,0,0]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.732807400636375,0.18506666063331068,1],"intensity":0.7,"time":1051.3750000000002,"scaleMultiplier":0.799439921219267,"rotation":[0,3.389859676361084,1.6598849296569824]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9628172577358782,0.7762566136661917,0.8575585060752928],"intensity":0.7,"time":1051.3750000000002,"scaleMultiplier":1.3527156741144102,"rotation":[0,3.389859676361084,1.6598849296569824]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.27164809103123844},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.679123920854181},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7707497931551188}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.808506733737886,0.5825923006050289,0.5110191036947072],"intensity":0.7,"time":42.1,"scaleMultiplier":0.8267438808754792,"rotation":[0,0,0]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.2177841612137854,0.9323082650080323,0.9025340767111629],"intensity":0.7,"time":1041.1000000000001,"scaleMultiplier":1.0875217804815371,"rotation":[0,3.1271791458129883,4.269839763641357]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6788586338516325,0.8560759387910366,1],"intensity":0.7,"time":1041.1000000000001,"scaleMultiplier":1.0331207829415525,"rotation":[0,3.1271791458129883,4.269839763641357]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8499241413082927},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7886503438930959},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.21899613155983388}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.10576464887708426,0.6764098561834544,1],"intensity":0.7,"time":103.75000000000001,"scaleMultiplier":0.6778878912595067,"rotation":[0,0,0]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.08835452841594815,0.40966215217486024,1],"intensity":0.7,"time":1102.7500000000007,"scaleMultiplier":0.9883825484393767,"rotation":[0,2.4189612865448,3.8094098567962646]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6563502538483582,0.03701926255598669,0.5520455583464354],"intensity":0.7,"time":1102.7500000000007,"scaleMultiplier":0.910618702621852,"rotation":[0,2.4189612865448,3.8094098567962646]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7669546206016093},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3847409845329821},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.2525890648830682}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.501295420806855,0.45208112942054873,0.5464434064924717],"intensity":0.901001295959577,"time":52.375,"scaleMultiplier":0.9048412310767977,"rotation":[0,5.871500492095947,5.932981967926025],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9095842204988004,0.2540715557988733,0.7813752663787454],"intensity":0.6093263045186177,"time":1051.3750000000002,"scaleMultiplier":1.0419867324780963,"rotation":[0,5.871500492095947,5.932981967926025],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.007266786880791183,0.33824469172395766,1],"intensity":0.8211307221325115,"time":1051.3750000000002,"scaleMultiplier":1.4158421945662776,"rotation":[0,5.871500492095947,5.932981967926025],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.3396723202895373},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.4928543621208519},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.08841465902514756}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.9631281697656959,0.7394201161805541,0.6086483895778656],"intensity":0.7,"time":134.57500000000002,"scaleMultiplier":0.6098255109873397,"rotation":[0,0,0]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.10409509181044996,0.42703931988216937,1],"intensity":0.7,"time":1133.575000000001,"scaleMultiplier":0.5075980526580123,"rotation":[0,4.949902057647705,2.2577991485595703]},{"colorRampStart":[0,0,0],"colorRampEnd":[0.14703924860805276,0.9477891416754572,0.6557976955082268],"intensity":0.7,"time":1133.575000000001,"scaleMultiplier":0.9730627368846182,"rotation":[0,4.949902057647705,2.2577991485595703]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.3652192233130336},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.08088455279357731},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.5197404925711453}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9842382885981352,0.25351905543357134,1],"intensity":0.6671117373509332,"time":329.7999999999999,"scaleMultiplier":1.6495614601006745,"rotation":[0,1.322028636932373,4.792330741882324]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.05753717478364708,0.9112767309416085,0.5688756136223674],"intensity":0.6773253545863553,"time":1328.8000000000027,"scaleMultiplier":0.774866788693243,"rotation":[0,1.322028636932373,4.792330741882324]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.1545156929641968,0.040140336612239376,0.780155808897689],"intensity":0.4555629080627113,"time":1328.8000000000027,"scaleMultiplier":1.113826000753535,"rotation":[0,1.322028636932373,4.792330741882324]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.17954043950885534},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.1570734898559749},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7748505033086985}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5548614242579788,0.27040649740956724,0.5239794421941042],"intensity":0.8459642526926473,"time":864.0999999999988,"scaleMultiplier":1.8472598289380882,"rotation":[0,1.9089155197143555,1.6005277633666992]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6207836188841611,0.747576470952481,0.6021825091447681],"intensity":0.6270434366771951,"time":1863.1000000000074,"scaleMultiplier":0.5118774886745397,"rotation":[0,1.9089155197143555,1.6005277633666992]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.07374534523114562,0.9104633778333664,0.4351570210419595],"intensity":0.824895576108247,"time":1863.1000000000074,"scaleMultiplier":1.2257598592720416,"rotation":[0,1.9089155197143555,1.6005277633666992]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.4504256749060005},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5858831501100212},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.8583075483329594}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.9099352422636002,0.24378189723938704,0.8253365003038198],"intensity":0.8502908075926825,"time":83.2,"scaleMultiplier":1.1367007470985844,"rotation":[0,3.926877737045288,1.3568891286849976],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.4451584273483604,0.7565681906417011,0.5425382393877953],"intensity":0.5765234450809658,"time":1082.2000000000005,"scaleMultiplier":0.9011077388587665,"rotation":[0,3.926877737045288,1.3568891286849976],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8202674388885498,0.9068604223430157,1],"intensity":0.3731857473263517,"time":1082.2000000000005,"scaleMultiplier":2.109140948768512,"rotation":[0,3.926877737045288,1.3568891286849976],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.6711849134881049},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.9061908472795039},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.9492943261284381}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.4763927541207522,0.9741542157717048,0.5793305777478963],"intensity":0.5755084390984848,"time":21.55,"scaleMultiplier":1.322139338590205,"rotation":[0,2.0286943912506104,3.705012083053589]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5153039344586433,0.31412086891941726,0.6341889658942819],"intensity":0.36800663196481764,"time":1020.55,"scaleMultiplier":1.395481082377955,"rotation":[0,2.0286943912506104,3.705012083053589]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.08356402558274567,0.9333587558940053,0.9645589559804648],"intensity":0.9066254019038752,"time":1020.55,"scaleMultiplier":0.7378459290818079,"rotation":[0,2.0286943912506104,3.705012083053589]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.04074992751702666},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5543908667750657},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.8093200526200235}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.9538355516269803,0.6897729670163244,0.37085450254380703],"intensity":0.24399410281330347,"time":165.40000000000003,"scaleMultiplier":0.3271269787554947,"rotation":[0,1.6231274604797363,2.5505282878875732],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6116228550672532,0.20890326634980735,0.8508360465057194],"intensity":0.6644910024711862,"time":1164.4000000000012,"scaleMultiplier":0.6671373413192052,"rotation":[0,1.6231274604797363,2.5505282878875732],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6328554935753344,0.21863591228611773,0.3281357455998659],"intensity":0.8915148947155103,"time":1164.4000000000012,"scaleMultiplier":0.9888763753270898,"rotation":[0,1.6231274604797363,2.5505282878875732],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.2576830359175801},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.15249681030400097},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.6615840457379818}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.5139126507565379,0.6765767629258336,0.5656057556625456],"intensity":0.8261346405837685,"time":216.77500000000006,"scaleMultiplier":0.4026865618223312,"rotation":[0,3.880375862121582,2.8545830249786377],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6947584410663693,0.11423473549075425,1],"intensity":0.884574124449864,"time":1215.7750000000017,"scaleMultiplier":0.9580227959498395,"rotation":[0,3.880375862121582,2.8545830249786377],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5559223960153759,0.9430732710752636,0.9161726979073137],"intensity":0.8364093323471025,"time":1215.7750000000017,"scaleMultiplier":1.154809766807925,"rotation":[0,3.880375862121582,2.8545830249786377],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5780163207091391},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.1256657054182142},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.27558651636354625}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.5209425538778305,0.2642294534016401,0.3817723651882261],"intensity":0.9557991597335785,"time":268.15000000000003,"scaleMultiplier":0.3641179808619238,"rotation":[0,4.559915065765381,5.4588494300842285],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.21013285010121763,0.6106327918823808,0.5556577756069601],"intensity":0.6603595626307651,"time":1267.1500000000021,"scaleMultiplier":0.6953255140568678,"rotation":[0,4.559915065765381,5.4588494300842285],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.09730361262336373,0.845908438321203,0.8774024238809943],"intensity":0.871672935038805,"time":1267.1500000000021,"scaleMultiplier":1.708664428325031,"rotation":[0,4.559915065765381,5.4588494300842285],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5672425269149244},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.043132560327649117},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.06877194973640144}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.15938917407765982,0.26030569849535823,1],"intensity":0.6814937942894176,"time":391.44999999999976,"scaleMultiplier":1.122528285100803,"rotation":[0,4.435750484466553,3.6551239490509033],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.0771582110319287,0.3441229814197868,0.6099679006729275],"intensity":0.49607787097338585,"time":1390.4500000000032,"scaleMultiplier":1.1062655239862618,"rotation":[0,4.435750484466553,3.6551239490509033],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.17436564341187477,0.15948507376015186,0.5367290696594864],"intensity":0.6542613902827725,"time":1390.4500000000032,"scaleMultiplier":2.2369110074764476,"rotation":[0,4.435750484466553,3.6551239490509033],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.4621368362568319},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6743630804121494},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.41256738686934114}]},
+			{"cubeSize":1024,"noiseScale":0.0025,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[0.5,0.25,0.125,0.0625,0.0325,0.0125,0.005,0.0025,0.00125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.11,1,1],"intensity":0.8,"time":1,"scaleMultiplier":1,"rotation":[0,0,0]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.09999999999999999,1,0.85],"intensity":0.1,"time":1000,"scaleMultiplier":1,"rotation":[0,0.5,0]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6,1,1],"intensity":0.1,"time":1000,"scaleMultiplier":0.9999000000000001,"rotation":[0,0.5,0]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.1462274934165181,0.13339595519937572,0.518899142043665],"intensity":0.9481065532658249,"time":72.925,"scaleMultiplier":1.382909000851214,"rotation":[0,1.1754603385925293,4.95838737487793]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.21906160027720034,0.9149251226335764,0.6830990051385015],"intensity":0.5625779886730016,"time":1071.9250000000004,"scaleMultiplier":0.6749331271275878,"rotation":[0,1.1754603385925293,4.95838737487793]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.40335663850419223,0.33343869401142,0.8151015790645033],"intensity":0.5999965941766278,"time":1071.9250000000004,"scaleMultiplier":0.8792531110571932,"rotation":[0,1.1754603385925293,4.95838737487793]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.16566655552014709},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5044462587684393},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7657364376354963}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.11303348559886219,0.5065743140876293,0.7984497544821352],"intensity":0.8016977773047984,"time":144.85000000000002,"scaleMultiplier":0.3483325180942156,"rotation":[0,2.021554470062256,3.411043405532837],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.4716261967550963,0.37034595571458334,0.8788032080046833],"intensity":0.6488423880422488,"time":1143.850000000001,"scaleMultiplier":0.4480264137282931,"rotation":[0,2.021554470062256,3.411043405532837],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9181486428715285,0.11949736322276308,0.667952704243362],"intensity":0.7290866185212508,"time":1143.850000000001,"scaleMultiplier":0.4901702783266323,"rotation":[0,2.021554470062256,3.411043405532837],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8179838792420924},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.8934178564231843},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.05700050969608128}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.2488386647310108,0.37290632282383734,0.5773255010135472],"intensity":0.935705419187434,"time":175.67500000000004,"scaleMultiplier":0.38636362978467154,"rotation":[0,1.0846303701400757,1.8799610137939453],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.32877417607232934,0.2822662978433072,0.45560460118576884],"intensity":0.7052546118153259,"time":1174.6750000000013,"scaleMultiplier":0.43186456374384863,"rotation":[0,1.0846303701400757,1.8799610137939453],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5744871420320123,0.4177883036900311,0.9920073449611664],"intensity":0.35823959016706797,"time":1174.6750000000013,"scaleMultiplier":0.30595561808102495,"rotation":[0,1.0846303701400757,1.8799610137939453],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.0700589173939079},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.09403233020566404},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.8533469503745437}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8935712343081832,0.5786860852967948,0.9587610042653978],"intensity":0.4593650844879447,"time":21.55,"scaleMultiplier":1.070271220756695,"rotation":[0,2.6155471801757812,2.4618303775787354]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5314709963276982,0.6418150116223842,0.6309132275637239],"intensity":0.8091248275944962,"time":1020.55,"scaleMultiplier":0.7450478246901184,"rotation":[0,2.6155471801757812,2.4618303775787354]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8570883737411351,0.09928882145322862,0.29110880848020315],"intensity":0.5315100879175588,"time":1020.55,"scaleMultiplier":1.3365604947851972,"rotation":[0,2.6155471801757812,2.4618303775787354]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.08674589125439525},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3167065754532814},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.20561867719516158}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06895473971962933,0.529314192244783,0.6519342106766999],"intensity":0.9374297639122232,"time":155.12500000000003,"scaleMultiplier":1.475832593971658,"rotation":[0,2.2572078704833984,1.6998276710510254]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7083051858935505,0.19342404347844427,0.8836705181747675],"intensity":0.42714367909356943,"time":1154.1250000000011,"scaleMultiplier":0.9443101333055622,"rotation":[0,2.2572078704833984,1.6998276710510254]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.768459535902366,0.25001119892112916,0.5460647493600845],"intensity":0.4354265569942071,"time":1154.1250000000011,"scaleMultiplier":1.1518125409447415,"rotation":[0,2.2572078704833984,1.6998276710510254]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9788918462581933},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.527050978736952},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.07001558737829328}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.0930846175178885,0.8863239474594594,0.7018161795567721],"intensity":0.5052097814390435,"time":329.7999999999999,"scaleMultiplier":1.2501193412880094,"rotation":[0,3.286144971847534,2.1593308448791504]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.02612965926527978,0.22556309122592214,0.9420862563420087],"intensity":0.815181879303418,"time":1328.8000000000027,"scaleMultiplier":0.612623999332471,"rotation":[0,3.286144971847534,2.1593308448791504]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.08221937599591912,0.35940150800161064,0.5746922618709505],"intensity":0.4796083392575383,"time":1328.8000000000027,"scaleMultiplier":1.409146882399298,"rotation":[0,3.286144971847534,2.1593308448791504]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.21808986901305616},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.11605240753851831},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.09797184006311}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7647640679497272,0.20044633629731842,0.6342428212519735],"intensity":0.8824137829942629,"time":11.275,"scaleMultiplier":0.8005495679099113,"rotation":[0,3.3557252883911133,1.6521321535110474]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7855764904525131,0.12082958081737157,0.8310410764534026],"intensity":0.964918317925185,"time":1010.275,"scaleMultiplier":0.6805853019468486,"rotation":[0,3.3557252883911133,1.6521321535110474]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.832030474441126,0.11503334064036612,0.10005170642398298],"intensity":0.3737645644228905,"time":1010.275,"scaleMultiplier":1.4918515059575905,"rotation":[0,3.3557252883911133,1.6521321535110474]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.6156858950853348},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.2793387067504227},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.025549670914188027}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.10729526448994871,0.38724312931299204,0.8655119042377919],"intensity":0.9085119187366217,"time":21.55,"scaleMultiplier":0.9510686715753986,"rotation":[0,1.9110060930252075,2.6604650020599365]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8620913433842361,0.9644911091309041,0.38847850426100194],"intensity":0.7203241744311526,"time":1020.55,"scaleMultiplier":0.6021190896206595,"rotation":[0,1.9110060930252075,2.6604650020599365]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6103624745737761,0.24304761458188298,0.718892557779327],"intensity":0.18898970268201082,"time":1020.55,"scaleMultiplier":1.5825441371993578,"rotation":[0,1.9110060930252075,2.6604650020599365]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.2208547182381153},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.18718975060619414},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.5573147106915712}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.16085891425609586,0.2316357837989927,0.6727332531008869],"intensity":0.7681968702469021,"time":31.825000000000003,"scaleMultiplier":0.8886412547868834,"rotation":[0,0.6413360834121704,2.0415680408477783]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.620263148797676,0.7872715231496841,1],"intensity":0.3136172443628311,"time":1030.825,"scaleMultiplier":0.5394776919059884,"rotation":[0,0.6413360834121704,2.0415680408477783]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8761240835301578,0.17857007565908137,0.6348479543812573],"intensity":0.7181858853902667,"time":1030.825,"scaleMultiplier":1.4079750333182042,"rotation":[0,0.6413360834121704,2.0415680408477783]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.12326919985935092},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.4994170875288546},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.9920308031141758}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.02112955460324888,0.42850529216229916,1],"intensity":0.4938719254452734,"time":42.1,"scaleMultiplier":0.5969813431134088,"rotation":[0,4.1943278312683105,3.5625786781311035]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06421746616251767,0.839214927284047,0.7553711677901447],"intensity":0.3555611984571441,"time":1041.1000000000001,"scaleMultiplier":0.3031265439011669,"rotation":[0,4.1943278312683105,3.5625786781311035]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9263663457240907,0.08793710567988461,0.7140158785041422],"intensity":0.9505668760975823,"time":1041.1000000000001,"scaleMultiplier":0.7614768676017987,"rotation":[0,4.1943278312683105,3.5625786781311035]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.013722850708290935},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7510701210703701},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7547690032515675}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.4439295425545424,0.9498825438786298,0.5312524689361453],"intensity":0.7645976342493668,"time":62.65,"scaleMultiplier":0.8835179337884382,"rotation":[0,0.8294951319694519,3.278895378112793]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8843773058615625,0.5124532741028816,0.9304212860297412],"intensity":0.7939932102803141,"time":1061.6500000000003,"scaleMultiplier":0.3527583438030467,"rotation":[0,0.8294951319694519,3.278895378112793]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.0028063431382182274,0.0609523002058268,0.06564119504764676],"intensity":0.7127059973776341,"time":1061.6500000000003,"scaleMultiplier":0.6914635186467427,"rotation":[0,0.8294951319694519,3.278895378112793]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.24289829772897065},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5574221760034561},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.07278074696660042}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7808794972952455,0.16400132863782343,0.5285990086849779],"intensity":0.8438446291023864,"time":134.57500000000002,"scaleMultiplier":0.6125650361647601,"rotation":[0,0.8444042205810547,5.4249982833862305]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.3588554949965328,0.4273354460019619,0.38176448573358357],"intensity":0.5015765700722112,"time":1133.575000000001,"scaleMultiplier":0.4457047079770761,"rotation":[0,0.8444042205810547,5.4249982833862305]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06650212523527443,0.7630466460250318,0.9947081177961081],"intensity":0.4545788008254021,"time":1133.575000000001,"scaleMultiplier":0.4163390709699093,"rotation":[0,0.8444042205810547,5.4249982833862305]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.4895747206173837},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5661111320368946},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7226412871386856}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9455347838811576,0.29713847767561674,0.9352628148626536],"intensity":0.5113410828402265,"time":103.75000000000001,"scaleMultiplier":0.979643062795327,"rotation":[0,0.5972832441329956,0.3708301782608032]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.07658592960797252,0.4374494168441743,0.5936040810775012],"intensity":0.7039236280834301,"time":1102.7500000000007,"scaleMultiplier":0.1768329236916121,"rotation":[0,0.5972832441329956,0.3708301782608032]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9544953529257327,0.11954331467859447,1],"intensity":0.5847352890763431,"time":1102.7500000000007,"scaleMultiplier":0.42497783584050935,"rotation":[0,0.5972832441329956,0.3708301782608032]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.47159955627284944},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.608515138970688},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.3599723696243018}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8901335571426896,0.0972632595803588,0.565257027046755],"intensity":0.46079588457942,"time":227.05000000000007,"scaleMultiplier":0.688220127425743,"rotation":[0,0.17636768519878387,5.552804470062256]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6474468661472201,0.21393736731261015,0.3847787759732455],"intensity":0.71663343985565,"time":1226.0500000000018,"scaleMultiplier":0.3563305091404607,"rotation":[0,0.17636768519878387,5.552804470062256]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.09400949883274735,0.255358535097912,0.9872022643685341],"intensity":0.6225706755649297,"time":1226.0500000000018,"scaleMultiplier":0.397348651915161,"rotation":[0,0.17636768519878387,5.552804470062256]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9686250719241798},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.46782376687042415},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.9229389410465956}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8537861006334423,0.0814429905731231,0.8330093859694898],"intensity":0.8420194183010608,"time":11.275,"scaleMultiplier":1.1138529903255403,"rotation":[0,3.8475756645202637,4.893052101135254]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8463181299157441,0.15161350299604234,0.79334183386527],"intensity":0.9962743090000004,"time":1010.275,"scaleMultiplier":0.5037747723981738,"rotation":[0,3.8475756645202637,4.893052101135254]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.2879625195637346,0.0725360619835555,0.35417266585864127],"intensity":0.5328839007997885,"time":1010.275,"scaleMultiplier":0.5280092503115769,"rotation":[0,3.8475756645202637,4.893052101135254]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9869623745325953},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.44542112457565963},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.19642564305104315}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5579345461446792,0.9593986587133259,0.6885497907642275],"intensity":0.9102546245791017,"time":31.825000000000003,"scaleMultiplier":0.7683841914258829,"rotation":[0,2.2143876552581787,4.944791793823242]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6676181750372052,0.9148681608494372,0.9020303555298597],"intensity":0.2570318058365955,"time":1030.825,"scaleMultiplier":0.6031314612348074,"rotation":[0,2.2143876552581787,4.944791793823242]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.23994697025045753,0.5783545330632478,0.85152692720294],"intensity":0.6327135695843026,"time":1030.825,"scaleMultiplier":0.5627728571452895,"rotation":[0,2.2143876552581787,4.944791793823242]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8279019882902503},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7090616463683546},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.4205947872251272}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.001180735649541025,0.2663468201644718,0.6903914702124894],"intensity":0.7753525550011545,"time":155.12500000000003,"scaleMultiplier":0.9660572055727243,"rotation":[0,2.9133214950561523,6.225420951843262]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9947694803122431,0.20037516532465813,0.8163436073809862],"intensity":0.653690220369026,"time":1154.1250000000011,"scaleMultiplier":0.6386312595568597,"rotation":[0,2.9133214950561523,6.225420951843262]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5628541896585375,0.38370844093151385,0.0721234839875251],"intensity":0.8456709908554331,"time":1154.1250000000011,"scaleMultiplier":1.138459307967941,"rotation":[0,2.9133214950561523,6.225420951843262]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.10911941528320312},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.23949693934991956},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.47374033951200545}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9395986811723561,0.13295531086623671,0.37543526757508516],"intensity":0.1717352784471586,"time":216.77500000000006,"scaleMultiplier":0.929562617164832,"rotation":[0,2.7205801010131836,2.746485710144043]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.2960958797484635,0.13538870867341762,0.5987053255084902],"intensity":0.8110872766468674,"time":1215.7750000000017,"scaleMultiplier":0.8984713861871192,"rotation":[0,2.7205801010131836,2.746485710144043]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9848029152490193,0.03633268270641574,0.5965673460159451],"intensity":0.817177444905974,"time":1215.7750000000017,"scaleMultiplier":0.8152548156359031,"rotation":[0,2.7205801010131836,2.746485710144043]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.22235412360168993},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6551117622293532},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.16705302381888032}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7391174442600459,0.6590701725799589,0.6083093478810042],"intensity":0.5849747283384203,"time":309.24999999999994,"scaleMultiplier":1.3282601181185447,"rotation":[0,2.7650349140167236,0.3770594596862793]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.2537223449908197,0.40169111359864473,1],"intensity":0.39510212657041843,"time":1308.2500000000025,"scaleMultiplier":0.787301558003695,"rotation":[0,2.7650349140167236,0.3770594596862793]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9157899972051381,0.12663030833937222,0.8083333128597587],"intensity":0.8199231450911612,"time":1308.2500000000025,"scaleMultiplier":0.6288755770971952,"rotation":[0,2.7650349140167236,0.3770594596862793]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.03988649230450392},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.9561148227658123},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.015207470394670963}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.1510883527807891,0.7095734267495573,0.9786617080681026],"intensity":0.6694869530852884,"time":114.02500000000002,"scaleMultiplier":0.8072778067905545,"rotation":[0,0.10946068167686462,5.503950119018555]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5535598592832685,0.43567476351745427,0.825342636089772],"intensity":0.6054755760356784,"time":1113.0250000000008,"scaleMultiplier":0.5000653867608903,"rotation":[0,0.10946068167686462,5.503950119018555]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.024692029925063242,0.6397235540207475,1],"intensity":0.5250374708790332,"time":1113.0250000000008,"scaleMultiplier":1.7509504660550785,"rotation":[0,0.10946068167686462,5.503950119018555]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.13812832138501108},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6001014895737171},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.05330249387770891}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.9346630370710045,0.28795410320162773,1],"intensity":0.40519226698670535,"time":62.65,"scaleMultiplier":1.0994600481209762,"rotation":[0,4.176498889923096,1.6320600509643555],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8333472281228751,0.6284532314166427,0.5230282731354237],"intensity":0.6565418537473305,"time":1061.6500000000003,"scaleMultiplier":1.4988681028792972,"rotation":[0,4.176498889923096,1.6320600509643555],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8005084763281047,0.8883766301441939,0.888777049491182],"intensity":0.7382658792659639,"time":1061.6500000000003,"scaleMultiplier":0.7141643797066988,"rotation":[0,4.176498889923096,1.6320600509643555],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.21438949462026358},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.9899428386706859},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7981410545762628}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.1612641764804721,0.3312187467236072,0.8181836633011699],"intensity":0.5204111215425654,"time":103.75000000000001,"scaleMultiplier":1.1019179155335093,"rotation":[0,4.488218784332275,2.96277117729187],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9612586626317352,0.6464212827850133,0.9435114481020719],"intensity":0.45634005779866116,"time":1102.7500000000007,"scaleMultiplier":1.0440438836955592,"rotation":[0,4.488218784332275,2.96277117729187],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6976946210488676,0.045874726260080885,0.6996573724318296],"intensity":0.823248820658773,"time":1102.7500000000007,"scaleMultiplier":0.5813198013921773,"rotation":[0,4.488218784332275,2.96277117729187],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.2576937498524785},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.17075609252788126},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.971389033133164}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.06837306031957267,0.9503174179699272,0.6518294422421604],"intensity":0.6551988911814987,"time":134.57500000000002,"scaleMultiplier":0.8923793770132459,"rotation":[0,0.914849042892456,0.9574365019798279],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.3514970510732383,0.1643060855567455,0.8458972529042512],"intensity":0.494751305412501,"time":1133.575000000001,"scaleMultiplier":1.3949119455263501,"rotation":[0,0.914849042892456,0.9574365019798279],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8637644906993955,0.21026685857214036,0.38795361015945673],"intensity":0.650049803406,"time":1133.575000000001,"scaleMultiplier":0.36021738535127584,"rotation":[0,0.914849042892456,0.9574365019798279],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.3997021990362555},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.4439252067822963},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7079456429928541}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.0328838997520507,0.34210170898586517,0.9322996933478862],"intensity":1.0108754061860963,"time":473.6499999999996,"scaleMultiplier":1.472799112088978,"rotation":[0,2.1742751598358154,1.124218463897705]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.07629109197296201,0.46908691874705255,0.898274174425751],"intensity":0.21775130631867798,"time":1472.650000000004,"scaleMultiplier":0.9963858991395681,"rotation":[0,2.1742751598358154,1.124218463897705]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.26817429135553533,0.08414385421201591,0.9639092844445258],"intensity":0.5713732874952256,"time":1472.650000000004,"scaleMultiplier":0.8514535443191418,"rotation":[0,2.1742751598358154,1.124218463897705]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5393953542225063},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5548573832493275},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.825117169180885}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9000213849358261,0.9696036872919648,0.7594598368741572],"intensity":0.3747336533444467,"time":93.47500000000001,"scaleMultiplier":1.412002141587436,"rotation":[0,4.9422101974487305,1.9477262496948242]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7555431206710637,0.48553311661817133,0.36890641367062926],"intensity":0.5073491034389007,"time":1092.4750000000006,"scaleMultiplier":1.0444689462892711,"rotation":[0,4.9422101974487305,1.9477262496948242]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8485661179292947,0.7564578778110446,0.13352667656727135],"intensity":0.6772516995726618,"time":1092.4750000000006,"scaleMultiplier":1.476852045031241,"rotation":[0,4.9422101974487305,1.9477262496948242]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.15017316327430305,0.10862820153124625,0.8494952891487628],"intensity":0.8406655436439905,"time":1092.4750000000006,"scaleMultiplier":0.6395059139076853,"rotation":[0,4.9422101974487305,1.9477262496948242]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9273577486164868},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7166628376580775},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.9299178556539118}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9896100235637277,0.49958823481574655,1],"intensity":0.5077300713106524,"time":124.30000000000003,"scaleMultiplier":0.916375624456322,"rotation":[0,0.09771542996168137,5.414441108703613]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.707432790659368,0.3666340911295265,0.7720868843607605],"intensity":0.30838108218158594,"time":1123.3000000000009,"scaleMultiplier":1.503800251950123,"rotation":[0,0.09771542996168137,5.414441108703613]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7528192829340696,0.8257000003941357,1],"intensity":0.3780438139045145,"time":1123.3000000000009,"scaleMultiplier":1.3141418192042384,"rotation":[0,0.09771542996168137,5.414441108703613]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8032809172291309,0.9889341385569423,0.5719997552223504],"intensity":1.205845032603247,"time":1123.3000000000009,"scaleMultiplier":0.5233211438956681,"rotation":[0,0.09771542996168137,5.414441108703613]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5526358499191701},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7884868264663965},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.44168303068727255}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.044909986201673725,0.6097440721932799,0.8954339330084622],"intensity":0.29974349408876155,"time":185.95000000000005,"scaleMultiplier":1.2885469541539785,"rotation":[0,2.5180299282073975,4.675923824310303]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6877043922431767,0.3711009072139859,0.17110950639471412],"intensity":0.935183476191014,"time":1184.9500000000014,"scaleMultiplier":2.2110808796334136,"rotation":[0,2.5180299282073975,4.675923824310303]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7325866862665862,0.794094675220549,0.6566747361794114],"intensity":0.7271103541366756,"time":1184.9500000000014,"scaleMultiplier":1.8338926554430857,"rotation":[0,2.5180299282073975,4.675923824310303]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.756194196408615,0.03252117871306838,0.6177317046094686],"intensity":0.8706333841662854,"time":1184.9500000000014,"scaleMultiplier":0.5875712740058848,"rotation":[0,2.5180299282073975,4.675923824310303]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7813448677770793},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3540467245038599},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.09946802514605224}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.3370266209822148,0.988486542366445,0.34404366579838097],"intensity":0.9729790881741792,"time":206.50000000000006,"scaleMultiplier":0.8152345670579012,"rotation":[0,3.81195330619812,3.7711050510406494]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.12088406016118824,0.9832139723002911,0.507746578194201],"intensity":0.6113341204822064,"time":1205.5000000000016,"scaleMultiplier":3.2075486861243827,"rotation":[0,3.81195330619812,3.7711050510406494]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6815306022763252,0.31478701322339475,0.16993390140123665],"intensity":0.8749745679553598,"time":1205.5000000000016,"scaleMultiplier":1.7729878142984927,"rotation":[0,3.81195330619812,3.7711050510406494]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.24440011195838443,0.04370805690996348,0.9923432862851769],"intensity":0.4478301298804581,"time":1205.5000000000016,"scaleMultiplier":0.8180466350041641,"rotation":[0,3.81195330619812,3.7711050510406494]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.950706274015829},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.979836075566709},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.49170603160746396}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9902595353778452,0.9623159989714622,0.9130046295467764],"intensity":0.6572177900001407,"time":62.65,"scaleMultiplier":1.1141861781943592,"rotation":[0,3.991218090057373,2.510486602783203]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.620616337051615,0.21479208790697163,0.7702728880103678],"intensity":0.6141095065046102,"time":1061.6500000000003,"scaleMultiplier":1.358376517891884,"rotation":[0,3.991218090057373,2.510486602783203]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.139982868451625,0.13273299299180508,1],"intensity":0.5827543850522489,"time":1061.6500000000003,"scaleMultiplier":0.5723082991024246,"rotation":[0,3.991218090057373,2.510486602783203]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8144193037878722},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6086756756994873},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.1044210062827915}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.45584818870943594,0.47431637690043515,1],"intensity":0.5493896004585249,"time":11.275,"scaleMultiplier":1.2399019399414535,"rotation":[0,2.8774173259735107,1.2585618495941162]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8192436871226824,0.27119311095150445,0.6740986743901528],"intensity":0.9668916441333865,"time":1010.275,"scaleMultiplier":0.9797899397984338,"rotation":[0,2.8774173259735107,1.2585618495941162]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6439943697592152,0.7314281420721037,0.5245122729580367],"intensity":0.2837187554080884,"time":1010.275,"scaleMultiplier":1.1305707280299362,"rotation":[0,2.8774173259735107,1.2585618495941162]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5199624912702093},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.8799082769970928},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.04819004183170994}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8904181068792815,0.11803924951571265,0.8374706970073085],"intensity":0.5032383157869801,"time":21.55,"scaleMultiplier":1.2991100654485908,"rotation":[0,2.9497323036193848,1.441860556602478]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5057865227147177,0.40760358612427905,1],"intensity":0.6338406389902785,"time":1020.55,"scaleMultiplier":0.7537011692409282,"rotation":[0,2.9497323036193848,1.441860556602478]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8591175760564546,0.9476958172767517,0.6347351669246866],"intensity":0.6629210452227414,"time":1020.55,"scaleMultiplier":0.6170800604826325,"rotation":[0,2.9497323036193848,1.441860556602478]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.03101886320419578},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6274254054307273},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.0766842311496918}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6535959385922435,0.9634857609656166,0.544359041758585],"intensity":0.4477253055059602,"time":42.1,"scaleMultiplier":1.4291202476649314,"rotation":[0,2.3581202030181885,0.4619370996952057]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.3736475261938042,0.025827872792527157,0.6301492868527506],"intensity":0.6522865652099407,"time":1041.1000000000001,"scaleMultiplier":1.4178324247683078,"rotation":[0,2.3581202030181885,0.4619370996952057]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.0660429145753577,0.6254323804579853,0.9038563299537893],"intensity":1.058245639377861,"time":1041.1000000000001,"scaleMultiplier":0.7669432874742604,"rotation":[0,2.3581202030181885,0.4619370996952057]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9358090315374091,0.1179367413213831,1],"intensity":0.241742489906238,"time":1041.1000000000001,"scaleMultiplier":0.5103938568225986,"rotation":[0,2.3581202030181885,0.4619370996952057]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5200102739191704},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.9037565663292354},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.3345943636268892}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8561320099979638,0.31560894264839595,0.7750869302544743],"intensity":0.5555464017670602,"time":72.925,"scaleMultiplier":0.5558904956560582,"rotation":[0,5.151554107666016,4.450265407562256]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8883849976118654,0.7721154480241238,0.8573298426344991],"intensity":0.4408222180791199,"time":1071.9250000000004,"scaleMultiplier":0.9525506924837828,"rotation":[0,5.151554107666016,4.450265407562256]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.12147016683593408,0.09667861158959577,0.8132599210366607],"intensity":1.1188798116752876,"time":1071.9250000000004,"scaleMultiplier":0.9784940860606498,"rotation":[0,5.151554107666016,4.450265407562256]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.13007241580635315,0.35170082119293516,0.5487407012842596],"intensity":0.2847515684785321,"time":1071.9250000000004,"scaleMultiplier":1.4059689248802372,"rotation":[0,5.151554107666016,4.450265407562256]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9891844710800797},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.6219693573657423},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.35726121673360467}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.052538898307830095,0.6454188607167453,1],"intensity":0.6046525617479347,"time":103.75000000000001,"scaleMultiplier":0.6552193741469682,"rotation":[0,2.5609681606292725,5.762354850769043]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.25790980039164424,0.14989815535955134,0.5524554369039834],"intensity":0.37839329772396013,"time":1102.7500000000007,"scaleMultiplier":1.09250701718914,"rotation":[0,2.5609681606292725,5.762354850769043]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6529811646323651,0.941087791696191,1],"intensity":0.5357237042044289,"time":1102.7500000000007,"scaleMultiplier":0.7997491195984583,"rotation":[0,2.5609681606292725,5.762354850769043]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.18683569412678472,0.13424029457382858,0.5290451585315168],"intensity":0.8812304363236763,"time":1102.7500000000007,"scaleMultiplier":1.7126472448412677,"rotation":[0,2.5609681606292725,5.762354850769043]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.2348381644114852},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.866868267999962},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.2985616666264832}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.20862314570695162,0.4946592082269489,0.6501040128059685],"intensity":0.8726478480268269,"time":134.57500000000002,"scaleMultiplier":0.8402738916112098,"rotation":[0,5.734895706176758,0.593438982963562]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7575667118653655,0.23091612849384544,0.7464121519587934],"intensity":0.6862215457949787,"time":1133.575000000001,"scaleMultiplier":1.3355956328709175,"rotation":[0,5.734895706176758,0.593438982963562]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6654102415777743,0.5338655824307352,0.47746403934434056],"intensity":0.5146975446725265,"time":1133.575000000001,"scaleMultiplier":0.840627105368735,"rotation":[0,5.734895706176758,0.593438982963562]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5897065489552915,0.742554074851796,0.8604373093694448],"intensity":0.9870011509396136,"time":1133.575000000001,"scaleMultiplier":1.258215095813769,"rotation":[0,5.734895706176758,0.593438982963562]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8256349416915327},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.4591322240885347},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.09288412798196077}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.4522773667704314,0.2652632161043584,0.39235446602106094],"intensity":0.41312196075450625,"time":62.65,"scaleMultiplier":0.9071397592215439,"rotation":[0,0.8486178517341614,5.457273006439209],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.20226302673108876,0.5020920881070197,0.6279265992343426],"intensity":0.4092525435844435,"time":1061.6500000000003,"scaleMultiplier":1.112067080505932,"rotation":[0,0.8486178517341614,5.457273006439209],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.4629918148275465,0.27992275473661715,0.6238902660552412],"intensity":0.97762549566105,"time":1061.6500000000003,"scaleMultiplier":0.7697726642173511,"rotation":[0,0.8486178517341614,5.457273006439209],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.1504685792606324},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.37570177647285163},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.017012044321745634}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5041618684772402,0.616994755808264,0.6042361841537058],"intensity":0.5903702326118946,"time":196.22500000000005,"scaleMultiplier":0.8341138799536928,"rotation":[0,3.9859955310821533,0.8249948620796204]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5604137473274023,0.08043308369815345,0.7215305406134576],"intensity":0.24090628686826673,"time":1195.2250000000015,"scaleMultiplier":0.9562331056578247,"rotation":[0,3.9859955310821533,0.8249948620796204]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.11834770464338364,0.8252322410698979,0.867855014745146],"intensity":0.9687234805198386,"time":1195.2250000000015,"scaleMultiplier":1.4946576042242956,"rotation":[0,3.9859955310821533,0.8249948620796204]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.4105518809519708},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.47269009589217603},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.36365037551149726}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.6910689393989743,0.11017282563261693,0.7312214707490057],"intensity":0.8189234981546177,"time":401.72499999999974,"scaleMultiplier":0.45203360856156644,"rotation":[0,6.278048515319824,1.770289659500122],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.15358148515224457,0.7693138956092298,0.6276650263462216],"intensity":0.5191027290886268,"time":1400.7250000000033,"scaleMultiplier":1.3230463976813862,"rotation":[0,6.278048515319824,1.770289659500122],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8536198479123414,0.4584671859629452,1],"intensity":0.4619737727567553,"time":1400.7250000000033,"scaleMultiplier":0.6540894795364266,"rotation":[0,6.278048515319824,1.770289659500122],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7443067955318838},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.4908138213213533},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.8388424834702164}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.29823240055702627,0.9830226860940455,0.305150727275759],"intensity":0.6354849488008767,"time":134.57500000000002,"scaleMultiplier":0.5027727894240698,"rotation":[0,2.006934881210327,5.42811393737793],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.020968492142856107,0.6747921875212342,0.8875286485999823],"intensity":0.26373630824964495,"time":1133.575000000001,"scaleMultiplier":1.4652754446323304,"rotation":[0,2.006934881210327,5.42811393737793],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8192154236603528,0.6211539164651184,0.8351314449682832],"intensity":0.968231667065993,"time":1133.575000000001,"scaleMultiplier":0.6582349405786829,"rotation":[0,2.006934881210327,5.42811393737793],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.2303396111819893},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.04138856288045645},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.3980612603481859}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.38663565251044923,0.4143854547291994,0.831608024192974],"intensity":0.8621931492118164,"time":134.57500000000002,"scaleMultiplier":0.8898641115196956,"rotation":[0,1.3092859983444214,3.905721426010132]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06466790661215782,0.67409273609519,0.28293465985916555],"intensity":0.3985909615410491,"time":1133.575000000001,"scaleMultiplier":0.21356345156900822,"rotation":[0,1.3092859983444214,3.905721426010132]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6202770790550858,0.6084612619597465,0.9135311471763998],"intensity":0.5392158892471344,"time":1133.575000000001,"scaleMultiplier":0.5358649543606809,"rotation":[0,1.3092859983444214,3.905721426010132]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.44773709145374596},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.1728277823422104},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.3867591719608754}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.30894194473512465,0.12124569248408082,0.48108656145632267],"intensity":0.9233868514653295,"time":134.57500000000002,"scaleMultiplier":1.0140937582264402,"rotation":[0,1.5968959331512451,2.9175939559936523]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.18899967917241156,0.9106676343362778,0.8829073631204665],"intensity":0.6622059194603935,"time":1133.575000000001,"scaleMultiplier":0.6595098064555657,"rotation":[0,1.5968959331512451,2.9175939559936523]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.0659802674781531,0.5456451324280351,0.5623352527618408],"intensity":0.5054825123865158,"time":1133.575000000001,"scaleMultiplier":2.455266522553748,"rotation":[0,1.5968959331512451,2.9175939559936523]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7336880296934396},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.1317911073565483},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.5697183734737337}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.5477502371650189,0.36607191781513393,0.7475553739350289],"intensity":0.26436965009197594,"time":144.85000000000002,"scaleMultiplier":1.3050887844505792,"rotation":[0,0.3794638216495514,6.278242588043213],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9566451446153224,0.9908385996241122,0.8738851177040488],"intensity":0.6660369219491258,"time":1143.850000000001,"scaleMultiplier":0.7931216396043281,"rotation":[0,0.3794638216495514,6.278242588043213],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8288876647129655,0.40347817540168757,0.6655703845899552],"intensity":0.8770206573652104,"time":1143.850000000001,"scaleMultiplier":0.37771316957300627,"rotation":[0,0.3794638216495514,6.278242588043213],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.6982974437996745},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.24609188293106854},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.8111043255776167}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8669939460232854,0.8132102626841515,0.6542497831396759],"intensity":0.5231032926763873,"time":93.47500000000001,"scaleMultiplier":0.5792476606212411,"rotation":[0,3.776287078857422,4.298924922943115]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.96338847768493,0.12189909187145531,1],"intensity":0.5629168652405496,"time":1092.4750000000006,"scaleMultiplier":1.169156410686598,"rotation":[0,3.776287078857422,4.298924922943115]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5638392015825957,0.8803224221337587,0.6038426286540926],"intensity":0.6019662045815494,"time":1092.4750000000006,"scaleMultiplier":0.7158518182507012,"rotation":[0,3.776287078857422,4.298924922943115]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5308011604938655,0.07819136208854616,1],"intensity":0.7120136375015136,"time":1092.4750000000006,"scaleMultiplier":0.751907746739431,"rotation":[0,3.776287078857422,4.298924922943115]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7109219925478101},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5364421592094004},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.33253630343824625}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.2760884906165302,0.6426190114580095,0.9767837515100837],"intensity":0.6769551906967536,"time":72.925,"scaleMultiplier":0.39802062719575804,"rotation":[0,0.8068276643753052,5.035943984985352],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.12414923822507264,0.12845072499476373,0.9767496085260063],"intensity":0.2970016650157049,"time":1071.9250000000004,"scaleMultiplier":0.6829832234873439,"rotation":[0,0.8068276643753052,5.035943984985352],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.25676555326208467,0.28185758530162275,0.9193324365187436],"intensity":0.9799745614873245,"time":1071.9250000000004,"scaleMultiplier":0.8155722251734281,"rotation":[0,0.8068276643753052,5.035943984985352],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7875181711278856},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7360781694296747},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.9972087293863297}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5363700136076659,0.3404163736850023,0.7050500398036093],"intensity":0.8330829717684537,"time":165.40000000000003,"scaleMultiplier":0.27492155805910046,"rotation":[0,4.014369964599609,3.990140914916992]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.04038549656979736,0.5839655892923474,0.6698262989521027],"intensity":0.7350318362237885,"time":1164.4000000000012,"scaleMultiplier":1.487769190249864,"rotation":[0,4.014369964599609,3.990140914916992]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5472411108203232,0.3043581119272858,1],"intensity":0.7547885406529531,"time":1164.4000000000012,"scaleMultiplier":0.7839168027512707,"rotation":[0,4.014369964599609,3.990140914916992]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6468325869645923,0.3730423536617309,0.7914927927777171],"intensity":0.8898217278765514,"time":1164.4000000000012,"scaleMultiplier":0.20661065625870959,"rotation":[0,4.014369964599609,3.990140914916992]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7692435206845403},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3557152657303959},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.6273153249640018}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.19141255505383006,0.2669110533315688,0.7217613469343632],"intensity":0.9164195164106786,"time":42.1,"scaleMultiplier":1.0505222908463474,"rotation":[0,3.686175584793091,4.968413352966309]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7002380916383117,0.7144322087988257,0.5172664172947407],"intensity":0.8088061263551936,"time":1041.1000000000001,"scaleMultiplier":0.33452933768836146,"rotation":[0,3.686175584793091,4.968413352966309]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9781834359746426,0.5326748134102672,0.7571003573480993],"intensity":0.9107073600403964,"time":1041.1000000000001,"scaleMultiplier":0.8260955547042387,"rotation":[0,3.686175584793091,4.968413352966309]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.2611911450512707,0.612902979599312,0.4038718784227967],"intensity":0.6490874141221866,"time":1041.1000000000001,"scaleMultiplier":0.8754862755576658,"rotation":[0,3.686175584793091,4.968413352966309]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9262297619134188},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5206730621866882},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.7160471719689667}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.03543635644018651,0.5128033459186554,0.9551997159142047],"intensity":0.7485124005936086,"time":93.47500000000001,"scaleMultiplier":0.7233202351285006,"rotation":[0,5.519563674926758,0.4868139326572418]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.20263145747594533,0.18013435695320368,1],"intensity":0.27840337879024446,"time":1092.4750000000006,"scaleMultiplier":0.5739772297938562,"rotation":[0,5.519563674926758,0.4868139326572418]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5753516673576087,0.5243708360940218,0.5935947764664888],"intensity":0.9674101665848867,"time":1092.4750000000006,"scaleMultiplier":1.9058546378193069,"rotation":[0,5.519563674926758,0.4868139326572418]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.20632301969453692},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3018711938057095},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.3615809506736696}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.4522060286253689,0.09532878990285082,0.811352486955002],"intensity":0.7550366920419037,"time":52.375,"scaleMultiplier":0.7469488563522458,"rotation":[0,3.8644979000091553,5.694823265075684]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.12465283134952189,0.6751095040235668,0.8293404127471149],"intensity":0.7232678364962339,"time":1051.3750000000002,"scaleMultiplier":0.8410593189549442,"rotation":[0,3.8644979000091553,5.694823265075684]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.06620462052524093,0.9103560398798436,1],"intensity":0.3216954714618623,"time":1051.3750000000002,"scaleMultiplier":0.5047843713854056,"rotation":[0,3.8644979000091553,5.694823265075684]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.07043670234270394},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.11864801403135061},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.4568834970705211}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06937298947013915,0.6305791458580643,0.705952878575772],"intensity":0.9761049615917727,"time":144.85000000000002,"scaleMultiplier":0.5614151282387666,"rotation":[0,4.561303615570068,5.536126613616943]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.2048604658339169,0.03765432303771374,0.9853147719986737],"intensity":0.9877361107850448,"time":1143.850000000001,"scaleMultiplier":0.9556336644546695,"rotation":[0,4.561303615570068,5.536126613616943]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8905178799759597,0.38715304061770434,0.4109017173759639],"intensity":0.24944753269664943,"time":1143.850000000001,"scaleMultiplier":0.08163376593632643,"rotation":[0,4.561303615570068,5.536126613616943]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7416824139654636},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.8396161592099816},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.2513742442242801}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.11667503858916457,0.41376830288209016,0.9398262484464794],"intensity":0.69611505609937,"time":144.85000000000002,"scaleMultiplier":0.8916543520120719,"rotation":[0,3.0565617084503174,5.796170711517334],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5128441222477704,0.7838633516803385,0.8651807869318873],"intensity":0.6578992002177982,"time":1143.850000000001,"scaleMultiplier":0.3238782180696368,"rotation":[0,3.0565617084503174,5.796170711517334],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.3240721307229252,0.4922867601271718,0.9887360208667815],"intensity":0.4459857436828314,"time":1143.850000000001,"scaleMultiplier":1.4219957347174477,"rotation":[0,3.0565617084503174,5.796170711517334],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.3331528133712709},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.7319268891587853},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.5881048350129277}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06895473971962933,0.529314192244783,0.6519342106766999],"intensity":0.9374297639122232,"time":155.12500000000003,"scaleMultiplier":1.475832593971658,"rotation":[0,2.2572078704833984,1.6998276710510254]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7083051858935505,0.19342404347844427,0.8836705181747675],"intensity":0.42714367909356943,"time":1154.1250000000011,"scaleMultiplier":0.9443101333055622,"rotation":[0,2.2572078704833984,1.6998276710510254]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.768459535902366,0.25001119892112916,0.5460647493600845],"intensity":0.4354265569942071,"time":1154.1250000000011,"scaleMultiplier":1.1518125409447415,"rotation":[0,2.2572078704833984,1.6998276710510254]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9788918462581933},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.527050978736952},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.07001558737829328}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[0.5,0.25,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06505139591172339,0.667299801716581,0.9034384398255497],"intensity":0.9733942077588289,"time":72.925,"scaleMultiplier":0.7918671344374258,"rotation":[0,4.913264274597168,2.0978736877441406]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.3253210377879441,0.9037565679755062,0.5439926260150969],"intensity":0.5904399881931022,"time":1071.9250000000004,"scaleMultiplier":0.7455337631949578,"rotation":[0,4.913264274597168,2.0978736877441406]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7771958883386105,0.8182041754480451,0.9319844311103225],"intensity":0.4718197104614228,"time":1071.9250000000004,"scaleMultiplier":0.4359118947397025,"rotation":[0,4.913264274597168,2.0978736877441406]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9175031662452966,0.7974971858784556,0.6071068004239351],"intensity":0.5477673723455518,"time":1071.9250000000004,"scaleMultiplier":2.720779584897127,"rotation":[0,4.913264274597168,2.0978736877441406]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6261612137313931,0.28684413107112056,0.20981807657517493],"intensity":0.4165787212410942,"time":2071.9250000000006,"scaleMultiplier":0.8973363523983814,"rotation":[0,4.913264274597168,2.0978736877441406]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.3551067244261503},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.28326476109214127},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.6562248601112515}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.07021213276311752,0.29607592802494764,1],"intensity":0.992896885657683,"time":62.65,"scaleMultiplier":0.5179820932421412,"rotation":[0,4.033252716064453,5.07667875289917]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7492083597462624,0.5704402269329876,0.5507332233246416],"intensity":0.15706439786590637,"time":1061.6500000000003,"scaleMultiplier":0.8249405355706867,"rotation":[0,4.033252716064453,5.07667875289917]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.802954860497266,0.7828235097695143,1],"intensity":0.5625170149374753,"time":1061.6500000000003,"scaleMultiplier":0.518197740427013,"rotation":[0,4.033252716064453,5.07667875289917]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9735150269698352,0.25215471512638027,0.5279852906242013],"intensity":0.8253466469701379,"time":1061.6500000000003,"scaleMultiplier":0.520494439937829,"rotation":[0,4.033252716064453,5.07667875289917]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.43084064102731645},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5908946865238249},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.5858779184054583}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6198689246084541,0.9774065380915999,0.43916066153906286],"intensity":0.7001691416371614,"time":257.87500000000006,"scaleMultiplier":0.35570973491108965,"rotation":[0,2.027769088745117,4.2441205978393555]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.11642930586822332,0.6970986630767584,0.8334216712974012],"intensity":0.7818452932871878,"time":1256.875000000002,"scaleMultiplier":0.8271603508312595,"rotation":[0,2.027769088745117,4.2441205978393555]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9780164596159011,0.4280547716189176,0.24088446190580726],"intensity":0.5439861617516727,"time":1256.875000000002,"scaleMultiplier":0.026660365210736465,"rotation":[0,2.027769088745117,4.2441205978393555]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.7975365968886763},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.3064286229200661},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.47652788553386927}]},
+
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.7253035714384168,0.3535960533190518,0.9282859864179045],"intensity":1,"time":155.12500000000003,"scaleMultiplier":1.015396678679721,"rotation":[0,3.6085071563720703,2.399782180786133],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6214663861319423,0.3890787223353982,0.025367873953655362],"intensity":0.29361747982911757,"time":1154.1250000000011,"scaleMultiplier":0.1878515065301169,"rotation":[0,3.6085071563720703,2.399782180786133],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6915342104621232,0.8723502208013089,0.8265714980661869],"intensity":0.362692274688743,"time":1154.1250000000011,"scaleMultiplier":1.765816624412839,"rotation":[0,3.6085071563720703,2.399782180786133],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.5923724798485637},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.1302219326607883},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.2994080283679068}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.6630162133369595,0.9328635446727275,1],"intensity":0.41777137974277134,"time":216.77500000000006,"scaleMultiplier":0.5501547326664478,"rotation":[0,3.684918165206909,5.6067705154418945],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8151646798942237,0.05171807925216865,1],"intensity":0.5256775427609681,"time":1215.7750000000017,"scaleMultiplier":0.8331225673753008,"rotation":[0,3.684918165206909,5.6067705154418945],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7535333377309144,0.45573469949886203,0.5344621937256306],"intensity":0.8565510774962602,"time":1215.7750000000017,"scaleMultiplier":0.5196502033204444,"rotation":[0,3.684918165206909,5.6067705154418945],"type":3}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9868543564807624},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.5252859462052584},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.868076060898602}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.5428907973691822,0.1346735735423863,0.8536363809835166],"intensity":0.8112628590781241,"time":114.02500000000002,"scaleMultiplier":0.6850044460369061,"rotation":[0,4.10416841506958,0.5467396378517151],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6788835297338665,0.9929218478500844,0.8679879861883819],"intensity":0.609720412432216,"time":1113.0250000000008,"scaleMultiplier":1.1128103248965104,"rotation":[0,4.10416841506958,0.5467396378517151],"type":3},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8143145230133086,0.6738735807593912,1],"intensity":0.3790167284896596,"time":1113.0250000000008,"scaleMultiplier":0.5278656925951214,"rotation":[0,4.10416841506958,0.5467396378517151],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.9660411595832556},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.40325016248971224},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.28820654563605785}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.15589706110768015,0.398880354128778,0.6792674383614212],"intensity":0.6977476380998269,"time":185.95000000000005,"scaleMultiplier":0.34356263458014347,"rotation":[0,6.22725772857666,5.395660400390625],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9294493023771793,0.04947671783156693,1],"intensity":0.8000735987443477,"time":1184.9500000000014,"scaleMultiplier":1.0240166121536336,"rotation":[0,6.22725772857666,5.395660400390625],"type":3},{"colorRampStart":[0,0,0],"colorRampEnd":[0.928792581660673,0.31075096433050925,0.7808446986600757],"intensity":0.4425135917961598,"time":1184.9500000000014,"scaleMultiplier":0.5595530302982328,"rotation":[0,6.22725772857666,5.395660400390625],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.26893706736154854},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.8416516438592225},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.6454642191529274}]},
+			{"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.17590568726882339,0.9192637416999786,0.5661851125769317],"intensity":0.8364736473187804,"time":185.95000000000005,"scaleMultiplier":2.720646056033733,"rotation":[0,0.8780247569084167,0.1625000536441803],"type":3},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7208867208100855,0.32003263430669904,1],"intensity":0.9548826126614586,"time":1184.9500000000014,"scaleMultiplier":0.6337234106115625,"rotation":[0,0.8780247569084167,0.1625000536441803],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.3169018302578479,0.9745234693400562,1],"intensity":0.22481845770962539,"time":1184.9500000000014,"scaleMultiplier":0.29536854578640365,"rotation":[0,0.8780247569084167,0.1625000536441803],"type":3}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0.5,"size":0.125,"seed":0.8786775395274162},{"stars":1000,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":2.5,"seed":0.2831926995422691},{"stars":100,"sprite":"flare-default.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default.png*/,"color":[0,0,1],"intensity":2,"size":5.5,"seed":0.920133612351492}]},
+
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.11985661159269513,0.8679324663244188,0.6291537089273334],"intensity":0.8382819081889465,"time":216.77500000000006,"scaleMultiplier":0.19827872373215846,"rotation":[0,5.875777244567871,4.824553489685059],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6318671784829348,0.7302843108773232,0.9488960187882185],"intensity":0.6061704995343462,"time":1215.7750000000017,"scaleMultiplier":0.08324104162605071,"rotation":[0,5.875777244567871,4.824553489685059],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5633429859299214,0.018325628014281354,0.2941547967493534],"intensity":0.4739756709430367,"time":1215.7750000000017,"scaleMultiplier":0.802095327329636,"rotation":[0,5.875777244567871,4.824553489685059],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.36782985646277666},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.15673831524327397},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.09241354232653975}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.8538236687891185,0.5244307648390532,1],"intensity":0.3690906154224648,"time":237.32500000000007,"scaleMultiplier":0.06611507298445962,"rotation":[0,3.2720603942871094,2.7157342433929443],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6533051151782275,0.27156692440621555,0.9186055809259415],"intensity":0.6395661761518567,"time":1236.3250000000019,"scaleMultiplier":0.07956615516953913,"rotation":[0,3.2720603942871094,2.7157342433929443],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.2636074593756348,0.7579671461135149,0.683045995188877],"intensity":0.7913432084256783,"time":1236.3250000000019,"scaleMultiplier":1.246304928777424,"rotation":[0,3.2720603942871094,2.7157342433929443],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.07814811426214874},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.987782598240301},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.6536043628584594}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.2665150756947696,0.41566698788665235,1],"intensity":1,"time":268.15000000000003,"scaleMultiplier":0.11346136744407866,"rotation":[0,1.8803359270095825,3.9213409423828125],"type":3},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8393199238926172,0.7899695122614503,0.7596135495696217],"intensity":0.24430031315423545,"time":1267.1500000000021,"scaleMultiplier":0.07848958114839927,"rotation":[0,1.8803359270095825,3.9213409423828125],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.11172564257867636,0.4381533341947943,1],"intensity":0.45193061674945056,"time":1267.1500000000021,"scaleMultiplier":0.837592777310205,"rotation":[0,1.8803359270095825,3.9213409423828125],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.6004926129244268},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.8103366435971111},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.47373619000427425}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7025087750516832,0.156588843325153,0.9333203928545117],"intensity":0.9441001105355099,"time":62.65,"scaleMultiplier":0.4631825433470079,"rotation":[0,1.9512407779693604,1.3100407123565674]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.08831406943500042,0.20036904723383486,1],"intensity":0.3738642670679837,"time":1061.6500000000003,"scaleMultiplier":0.8561884458029454,"rotation":[0,1.9512407779693604,1.3100407123565674]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.09498696471564473,0.6322930215392262,0.5064456607215106],"intensity":0.4820356223965063,"time":1061.6500000000003,"scaleMultiplier":0.34109922341375776,"rotation":[0,1.9512407779693604,1.3100407123565674]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.27001708117313683},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.23439143365249038},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.13065998977981508}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.3865953530184925,0.1962247909978032,0.8225783514790237],"intensity":0.10496139726601542,"time":298.97499999999997,"scaleMultiplier":0.2229761686334338,"rotation":[0,6.009651184082031,6.244065761566162],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7392545631155372,0.6270413913298398,0.5437948883045465],"intensity":0.7798016310669482,"time":1297.9750000000024,"scaleMultiplier":0.09613679152802332,"rotation":[0,6.009651184082031,6.244065761566162],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.36662488360889256,0.32478129467926914,0.6691060997545719],"intensity":0.9320483403513208,"time":1297.9750000000024,"scaleMultiplier":0.941119960549537,"rotation":[0,6.009651184082031,6.244065761566162],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7406943389214575},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9526567556895316},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5189298421610147}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.2991196769289673,0.3378480894025416,0.9249236844480038],"intensity":0.5256417694268748,"time":114.02500000000002,"scaleMultiplier":0.5905411950767434,"rotation":[0,4.112332344055176,3.702070474624634],"type":3},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8261039615608752,0.6996734065469356,0.6196955309715122],"intensity":0.485018159262836,"time":1113.0250000000008,"scaleMultiplier":0.9825982858321581,"rotation":[0,4.112332344055176,3.702070474624634],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7600936472881585,0.4647372572217137,0.9161153624299914],"intensity":0.7893400713102892,"time":1113.0250000000008,"scaleMultiplier":0.5878203597854523,"rotation":[0,4.112332344055176,3.702070474624634],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.23289293586276472},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9819793910719454},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.1521035886835307}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.05271721258759498,0.3008865718729794,1],"intensity":0.9472179064061492,"time":196.22500000000005,"scaleMultiplier":0.8855708016549149,"rotation":[0,0.22536581754684448,3.870832681655884],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.02117556496523322,0.7320733342785388,0.7445653679315001],"intensity":0.5365064088953659,"time":1195.2250000000015,"scaleMultiplier":0.3648627144430987,"rotation":[0,0.22536581754684448,3.870832681655884],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5763562873471528,0.6894798709545285,0.7735161927994341],"intensity":0.6790532290469855,"time":1195.2250000000015,"scaleMultiplier":0.5769550375103347,"rotation":[0,0.22536581754684448,3.870832681655884],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.541908485814929},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.6379343629814684},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.9223158040549606}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.9552092526573688,0.3672394892200827,0.978772540576756],"intensity":0.6024336154572665,"time":103.75000000000001,"scaleMultiplier":0.48295863724976085,"rotation":[0,5.068234443664551,4.402469635009766]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.7990397450048476,0.6024486913811415,0.8484238979872316],"intensity":0.6241521336603909,"time":1102.7500000000007,"scaleMultiplier":0.3387508883526111,"rotation":[0,5.068234443664551,4.402469635009766]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.7758996896445751,0.641512080328539,1],"intensity":0.5734142508823424,"time":1102.7500000000007,"scaleMultiplier":2.6524323093135553,"rotation":[0,5.068234443664551,4.402469635009766]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.27199135860428214},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.13487716065719724},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8248712217900902}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.32394519611261785,0.8038039200473576,0.6480131878051907],"intensity":0.9811673818621783,"time":298.97499999999997,"scaleMultiplier":0.12741992264705718,"rotation":[0,1.3533226251602173,2.1546249389648438],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7287419766653326,0.053818360669538316,0.5345057216472924],"intensity":0.2665668261470273,"time":1297.9750000000024,"scaleMultiplier":6.936851761367791,"rotation":[0,1.3533226251602173,2.1546249389648438],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.16103714704513553,0.3072011873591691,0.6789415145758539],"intensity":0.5522657919907942,"time":1297.9750000000024,"scaleMultiplier":0.025288833365235002,"rotation":[0,1.3533226251602173,2.1546249389648438],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7403733157552779},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9961552084423602},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8744597982149571}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.8967139795422554,0.7745228542480617,0.8580584060400724],"intensity":0.8283210656838491,"time":144.85000000000002,"scaleMultiplier":1.253674878008606,"rotation":[0,2.4993581771850586,0.5514436364173889]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.6695352147798985,0.6946697048842908,0.8385790868196636],"intensity":0.7653602380305529,"time":1143.850000000001,"scaleMultiplier":0.7249992070915324,"rotation":[0,2.4993581771850586,0.5514436364173889]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.300529133528471,0.5143340660724789,0.4165657642297447],"intensity":0.8266599290072918,"time":1143.850000000001,"scaleMultiplier":2.0274590947386226,"rotation":[0,2.4993581771850586,0.5514436364173889]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.3013711606618017},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.5644868444651365},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.7229905030690134}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.8881938050035387,0.07502839434891935,0.9895632471889257],"intensity":0.9666444701375438,"time":114.02500000000002,"scaleMultiplier":0.38380798003950695,"rotation":[0,3.784604549407959,6.1057820320129395],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6547238663770258,0.5134144192561507,0.007059930823743343],"intensity":0.4298094484023749,"time":1113.0250000000008,"scaleMultiplier":0.7290576421724816,"rotation":[0,3.784604549407959,6.1057820320129395],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9724856144748628,0.814127281308174,0.8048284808173776],"intensity":0.4035460814600809,"time":1113.0250000000008,"scaleMultiplier":0.6012598357687691,"rotation":[0,3.784604549407959,6.1057820320129395],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.9260442755185068},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7802532215137035},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.034619669895619154}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.6998733873479068,0.5115168425254524,0.6299743975978345],"intensity":0.7149723328649997,"time":165.40000000000003,"scaleMultiplier":2.1436082231850335,"rotation":[0,1.0811132192611694,2.49715256690979],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.17616310808807611,0.2418253477662801,0.08631047722883523],"intensity":0.30449125324375925,"time":1164.4000000000012,"scaleMultiplier":2.2841859667433155,"rotation":[0,1.0811132192611694,2.49715256690979],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5075010457076133,0.1771507665980607,0.9608867135830224],"intensity":0.7805364138912408,"time":1164.4000000000012,"scaleMultiplier":0.7234777225487685,"rotation":[0,1.0811132192611694,2.49715256690979],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7178078591823578},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.11463934858329594},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.1437517311424017}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.3730629165656864,0.33062225766479963,0.5402962975203991],"intensity":0.5639228970045224,"time":134.57500000000002,"scaleMultiplier":1.334844083327556,"rotation":[0,4.962738990783691,0.2272181510925293]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7055621133185923,0.16435959911905224,0.968189470237121],"intensity":0.5921036817133426,"time":1133.575000000001,"scaleMultiplier":0.08954730481880883,"rotation":[0,4.962738990783691,0.2272181510925293]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.06373611697927112,0.24120689323171962,1],"intensity":0.6439734212821349,"time":1133.575000000001,"scaleMultiplier":0.8531817163292232,"rotation":[0,4.962738990783691,0.2272181510925293]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.9670400191098452},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.48433213168755174},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.7219415802974254}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.6438147835433483,0.15440547675825664,0.5755982568953186],"intensity":0.9702943679410965,"time":42.1,"scaleMultiplier":1.2858520859047686,"rotation":[0,4.676478385925293,3.6469831466674805]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5654478005599232,0.0567751657217741,1],"intensity":0.9113613052293659,"time":1041.1000000000001,"scaleMultiplier":0.8186664957444663,"rotation":[0,4.676478385925293,3.6469831466674805]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5634086166974159,0.14427636261098092,0.8764655247796327],"intensity":0.7307411056244746,"time":1041.1000000000001,"scaleMultiplier":1.7875312739767166,"rotation":[0,4.676478385925293,3.6469831466674805]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.3410336484666914},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7264357903040946},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5396462033968419}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.1296267823781818,0.30957785272039473,1],"intensity":0.8487627344205976,"time":278.425,"scaleMultiplier":0.14979393859872991,"rotation":[0,1.7384339570999146,4.248770713806152],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.034304846543818664,0.6072831079363823,0.5746798578184098],"intensity":0.626158743351698,"time":1277.4250000000022,"scaleMultiplier":0.11459324324564972,"rotation":[0,1.7384339570999146,4.248770713806152],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6185073454398662,0.7305190667975694,0.8470739296171814],"intensity":0.7422761332476512,"time":1277.4250000000022,"scaleMultiplier":0.1864147916715387,"rotation":[0,1.7384339570999146,4.248770713806152],"type":2}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.11530802655033767},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9622828029096127},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.9450511538889259}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.1325106525328011,0.25720393727533525,0.8911914068739861],"intensity":0.48474539711605746,"time":401.72499999999974,"scaleMultiplier":4.343907528954728,"rotation":[0,3.7395577430725098,6.1374335289001465]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.08947930531576281,0.376531497342512,1],"intensity":0.6962189124897122,"time":1400.7250000000033,"scaleMultiplier":1.8987580816948764,"rotation":[0,3.7395577430725098,6.1374335289001465]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.07034291862510102,0.015873954398557603,0.6399593027308583],"intensity":0.6190356903942301,"time":1400.7250000000033,"scaleMultiplier":0.5945537569731238,"rotation":[0,3.7395577430725098,6.1374335289001465]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7123429854400456},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.782517850631848},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.9680947829037905}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[0.5,0.25,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.579655138310045,0.3009639603551477,0.7716961069963872],"intensity":0.5703372264513746,"time":114.02500000000002,"scaleMultiplier":0.5548267433732966,"rotation":[0,2.2469921112060547,4.908047676086426]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.08066270104609433,0.30871693370863795,0.6684373763855547],"intensity":0.8334778629243373,"time":1113.0250000000008,"scaleMultiplier":0.8644168601723273,"rotation":[0,2.2469921112060547,4.908047676086426]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.6601853617466986,0.1533973324112594,1],"intensity":0.6649619460105896,"time":1113.0250000000008,"scaleMultiplier":0.2956179358526599,"rotation":[0,2.2469921112060547,4.908047676086426]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.2638419398572297,0.06983349123038353,0.5032570043113083],"intensity":0.6570293430238963,"time":1113.0250000000008,"scaleMultiplier":1.229928153463108,"rotation":[0,2.2469921112060547,4.908047676086426]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.5959888338111341,0.6487206702586263,0.9441744973883033],"intensity":0.5762319192988798,"time":2113.025000000001,"scaleMultiplier":0.9807528348387423,"rotation":[0,2.2469921112060547,4.908047676086426]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.8349600406363606},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.2854847274720669},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.3743419861420989}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6134215535130353,0.05501557979732748,0.9618372940458357],"intensity":0.9116707713576033,"time":114.02500000000002,"scaleMultiplier":1.0842278306001931,"rotation":[0,2.368049383163452,0.8889368772506714]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.4268406063783916,0.05501580820418891,0.9104993205983192],"intensity":0.4705728011671454,"time":1113.0250000000008,"scaleMultiplier":0.5342761480254613,"rotation":[0,2.368049383163452,0.8889368772506714]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7560848339926451,0.03248956962488596,0.9299041859339923],"intensity":0.4177564274752512,"time":1113.0250000000008,"scaleMultiplier":0.38345925995901303,"rotation":[0,2.368049383163452,0.8889368772506714]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7038141409866512},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7628872969653457},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8914967135060579}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.8052279369439931,0.21391224046237764,0.7971583614125848],"intensity":0.7004670550115406,"time":42.1,"scaleMultiplier":0.7907493185962441,"rotation":[0,3.475292205810547,3.7738115787506104]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.31387669080868363,0.3682626006193459,0.735097031807527],"intensity":0.8317059158114717,"time":1041.1000000000001,"scaleMultiplier":0.6236701514439638,"rotation":[0,3.475292205810547,3.7738115787506104]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.023876528022810827,0.5110068318899721,0.36518806777894497],"intensity":0.2943075080169365,"time":1041.1000000000001,"scaleMultiplier":1.7124898224286818,"rotation":[0,3.475292205810547,3.7738115787506104]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.2668504691682756},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.3932698282878846},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.6372248488478363}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.1670047314837575,0.8971213060431182,0.938968499423936],"intensity":0.8046409311005845,"time":124.30000000000003,"scaleMultiplier":0.7827175258845004,"rotation":[0,3.4021008014678955,3.169173240661621],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.17030192259699106,0.37000511004589504,0.05881061824038625],"intensity":0.45886601202655586,"time":1123.3000000000009,"scaleMultiplier":0.563981302127723,"rotation":[0,3.4021008014678955,3.169173240661621],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.19835020508617163,0.31584563758224243,0.6799631281755865],"intensity":0.8241390462731942,"time":1123.3000000000009,"scaleMultiplier":0.5315992580252433,"rotation":[0,3.4021008014678955,3.169173240661621],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.10725195240229368},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.6537909819744527},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.6482188536319882}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.41514517716132104,0.9646144080907106,0.8451671209186316],"intensity":0.5161786252632737,"time":42.1,"scaleMultiplier":1.8088841690767956,"rotation":[0,4.190524101257324,5.963071823120117]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.12708761449903253,0.2168814346659929,0.2582038934342563],"intensity":0.433737431326881,"time":1041.1000000000001,"scaleMultiplier":1.3902695906462816,"rotation":[0,4.190524101257324,5.963071823120117]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.7139646611176431,0.7579441561829298,0.7567271338775754],"intensity":0.8500839434098452,"time":1041.1000000000001,"scaleMultiplier":1.0474313017399088,"rotation":[0,4.190524101257324,5.963071823120117]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.5712677300907671},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.052671575685963035},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5823690397664905}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.94273388129659,0.7099738449323922,1],"intensity":0.8818728426238522,"time":103.75000000000001,"scaleMultiplier":1.4099177936913307,"rotation":[0,1.0993458032608032,4.392126083374023]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.1711701599415384,0.02131288289092486,0.6089829688426107],"intensity":0.8956874329596758,"time":1102.7500000000007,"scaleMultiplier":0.513752315112161,"rotation":[0,1.0993458032608032,4.392126083374023]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9641645161900669,0.8175850296393037,0.7538610345218331],"intensity":0.3963433550670743,"time":1102.7500000000007,"scaleMultiplier":0.4190426175674467,"rotation":[0,1.0993458032608032,4.392126083374023]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.38569386885501444},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.023496590787544847},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5095924814231694}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.49622052907943726,0.8948800996877253,0.5874989540316164],"intensity":0.9968824076699092,"time":124.30000000000003,"scaleMultiplier":0.5276217069769346,"rotation":[0,6.262135028839111,3.845217704772949],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.3778997082263231,0.544348833616823,0.5909597272984684],"intensity":0.4162764528533443,"time":1123.3000000000009,"scaleMultiplier":0.35539936720859955,"rotation":[0,6.262135028839111,3.845217704772949],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.342520963633433,0.6531005743891001,0.33272821898572147],"intensity":0.38684113947674625,"time":1123.3000000000009,"scaleMultiplier":1.3274657925988087,"rotation":[0,6.262135028839111,3.845217704772949],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.3502672768663615},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.4553975942544639},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.6572768853511661}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.0025,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[0.5,0.25,0.125,0.0625,0.0325,0.0125,0.005,0.0025,0.00125],"nebulaLayers":[{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.8793756728991862,0.0846864269115031,0.6355449189431965],"intensity":0.8926700242795049,"time":72.925,"scaleMultiplier":0.015040416040251588,"rotation":[0,4.731593608856201,4.482275009155273]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.5187435932457447,0.9932427473831922,0.7663418524898589],"intensity":0.23468380621634416,"time":1071.9250000000004,"scaleMultiplier":0.06183798507271099,"rotation":[0,4.731593608856201,4.482275009155273]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.5656199404038489,0.19059792440384615,1],"intensity":0.6726461695041507,"time":1071.9250000000004,"scaleMultiplier":0.016938797102780706,"rotation":[0,4.731593608856201,4.482275009155273]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.1537362216040492},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9896271233446896},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.9634338580071926}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.7919296480249614,0.44774610782042146,1],"intensity":0.7392948864260689,"time":175.67500000000004,"scaleMultiplier":0.43332994138395486,"rotation":[0,0.9320381879806519,3.7900867462158203],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.7479195825289935,0.9827448066789658,0.5495966621674597],"intensity":0.457539567258209,"time":1174.6750000000013,"scaleMultiplier":0.8674166920512586,"rotation":[0,0.9320381879806519,3.7900867462158203],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6381901442073286,0.7002345568034798,0.7472893630620092],"intensity":0.7498015980701893,"time":1174.6750000000013,"scaleMultiplier":0.7528516602616779,"rotation":[0,0.9320381879806519,3.7900867462158203],"type":3}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.9252018872648478},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.5474817543290555},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.14031431335024536}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.7489804262295365,0.2179058808833361,0.8620755344163626],"intensity":0.3460297191515564,"time":196.22500000000005,"scaleMultiplier":0.5463409132308079,"rotation":[0,2.8970587253570557,2.8390324115753174],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8381837601773441,0.4503216869197786,0.4530046347063035],"intensity":1,"time":1195.2250000000015,"scaleMultiplier":0.16710818863561427,"rotation":[0,2.8970587253570557,2.8390324115753174],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.46173033909872174,0.8298087907023728,0.4835251090116799],"intensity":0.42834175487514575,"time":1195.2250000000015,"scaleMultiplier":1.684625332217046,"rotation":[0,2.8970587253570557,2.8390324115753174],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.8608578564599156},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.3418015129864216},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8344881758093834}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.07601224887184804,0.36061154701747,1],"intensity":0.5834169714013113,"time":165.40000000000003,"scaleMultiplier":0.6149736265521194,"rotation":[0,4.549565315246582,1.082952857017517]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6994944086764008,0.8936181198805568,0.5839085839688778],"intensity":0.6298537411261349,"time":1164.4000000000012,"scaleMultiplier":0.4006113812811296,"rotation":[0,4.549565315246582,1.082952857017517]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.4372127160895616,0.9831507836934179,0.6171319526620209],"intensity":0.5867292874725535,"time":1164.4000000000012,"scaleMultiplier":0.1649507056577438,"rotation":[0,4.549565315246582,1.082952857017517]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.6340494542382658},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.9411857081577182},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.6023739092051983}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.9162309600505978,0.6450027502141893,0.9039911387953907],"intensity":0.8854086684295908,"time":124.30000000000003,"scaleMultiplier":0.2850689530853816,"rotation":[0,0.3335532546043396,1.7994494438171387]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5104953369591386,0.07477718591690073,0.7086825228761882],"intensity":0.5558899855706841,"time":1123.3000000000009,"scaleMultiplier":1.463449287286803,"rotation":[0,0.3335532546043396,1.7994494438171387]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.7955208281055093,0.177202315768227,0.6405919138342142],"intensity":0.7229508793214336,"time":1123.3000000000009,"scaleMultiplier":0.2680653363704522,"rotation":[0,0.3335532546043396,1.7994494438171387]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.3910745340399444},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.025905974907800555},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.9793886470142752}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.1784502137452364,0.3207478898111731,1],"intensity":0.6767609254689886,"time":83.2,"scaleMultiplier":0.4351055819338458,"rotation":[0,4.1963019371032715,5.178905487060547]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5499924917239697,0.39490394247695804,0.6525367735885084],"intensity":0.4118288164492695,"time":1082.2000000000005,"scaleMultiplier":0.3011431687501949,"rotation":[0,4.1963019371032715,5.178905487060547]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6926635499112308,0.6994598901364952,0.7313635258469731],"intensity":0.7114102580817415,"time":1082.2000000000005,"scaleMultiplier":1.2546400967251141,"rotation":[0,4.1963019371032715,5.178905487060547]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.12291598762385547},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.2858817782253027},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.33145600906573236}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.2918217219412327,0.4701548332814127,0.9534466697368771],"intensity":0.7924869274254888,"time":114.02500000000002,"scaleMultiplier":0.4177455858573953,"rotation":[0,0.5189290642738342,0.3735702633857727],"type":2},{"colorRampStart":[0,0,0],"colorRampEnd":[0.735366671346128,0.39964458369649947,0.7645935358013958],"intensity":0.6757380231516434,"time":1113.0250000000008,"scaleMultiplier":0.7941227530128638,"rotation":[0,0.5189290642738342,0.3735702633857727],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.5638728686608374,0.47091910731978714,0.7840972261037678],"intensity":0.3317750494228675,"time":1113.0250000000008,"scaleMultiplier":0.8916857879077926,"rotation":[0,0.5189290642738342,0.3735702633857727],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.8745345317292958},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7377558194566518},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8224785930942744}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.49249186273664236,0.4903179004322737,0.936858878005296],"intensity":0.48725801445543765,"time":124.30000000000003,"scaleMultiplier":0.7995415759977155,"rotation":[0,1.4011427164077759,4.496380805969238]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.6029488572385163,0.18615960818715394,1],"intensity":0.6307346380781381,"time":1123.3000000000009,"scaleMultiplier":0.6350482083576148,"rotation":[0,1.4011427164077759,4.496380805969238]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.9309347770176828,0.7895282136742026,0.8064680022653192],"intensity":0.682007347466424,"time":1123.3000000000009,"scaleMultiplier":0.429891266368377,"rotation":[0,1.4011427164077759,4.496380805969238]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.4499628741759807},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.8165111686103046},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5791668999008834}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.818423978285864,0.1451171457301825,0.5780110470950603],"intensity":0.7830540107795968,"time":134.57500000000002,"scaleMultiplier":1.4918577736679035,"rotation":[0,3.947960376739502,6.053376197814941],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.10465381084941329,0.8821950142737478,0.8584088035859168],"intensity":0.5434583312133326,"time":1133.575000000001,"scaleMultiplier":1.3792142326357513,"rotation":[0,3.947960376739502,6.053376197814941],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6673365058377385,0.9364800432231277,0.8758186064660549],"intensity":0.4734876580070704,"time":1133.575000000001,"scaleMultiplier":0.8989608035713562,"rotation":[0,3.947960376739502,6.053376197814941],"type":0}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7198920091614127},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.686130327405408},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.06260966858826578}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.6081962219905108,0.6713486474473028,0.444507674081251],"intensity":0.6291391886537895,"time":196.22500000000005,"scaleMultiplier":0.4031177257521487,"rotation":[0,3.326552629470825,5.256763458251953]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.749322579940781,0.147133978549391,0.8742991632316262],"intensity":0.6716286961687729,"time":1195.2250000000015,"scaleMultiplier":0.5315871578128221,"rotation":[0,3.326552629470825,5.256763458251953]},{"type":2,"colorRampStart":[0,0,0],"colorRampEnd":[0.0728930179029703,0.4141124493908137,0.3922801078297198],"intensity":0.8156774247065186,"time":1195.2250000000015,"scaleMultiplier":0.5145847084801748,"rotation":[0,3.326552629470825,5.256763458251953]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.7541067458223552},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7363643441349268},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.7537965821102262}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.6568129016086458,0.1258960403501988,0.8874268610961735],"intensity":0.6200007861480117,"time":62.65,"scaleMultiplier":0.7442936677162586,"rotation":[0,5.636258125305176,4.088583469390869]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.47178511344827734,0.09230715851299466,0.3062836320605129],"intensity":0.5516572408843785,"time":1061.6500000000003,"scaleMultiplier":0.15264046194022515,"rotation":[0,5.636258125305176,4.088583469390869]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.5647398116998374,0.3044286135118454,0.994021023157984],"intensity":0.6283419729676096,"time":1061.6500000000003,"scaleMultiplier":0.8477211662136922,"rotation":[0,5.636258125305176,4.088583469390869]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.5671884310431778},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.514630083926022},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.7171341117937118}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.48803351446986215,0.04279805743135523,1],"intensity":0.8269252317957579,"time":216.77500000000006,"scaleMultiplier":0.28908668762025774,"rotation":[0,1.3631532192230225,4.4398040771484375],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.8877153482753783,0.4410546622239054,0.6961239266674966],"intensity":0.4654899734538048,"time":1215.7750000000017,"scaleMultiplier":0.09971733845679943,"rotation":[0,1.3631532192230225,4.4398040771484375],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.9469573483802378,0.502781632123515,0.8316318735014647],"intensity":0.507584794750437,"time":1215.7750000000017,"scaleMultiplier":1.4710819740783185,"rotation":[0,1.3631532192230225,4.4398040771484375],"type":1}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.12988150166347623},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.7063991613686085},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.25430201389826834}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.08867035759612919,0.8206883808597922,0.8615470605436713],"intensity":0.8411442426266149,"time":124.30000000000003,"scaleMultiplier":1.326854140760185,"rotation":[0,4.066123962402344,1.240666389465332]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.5508269369602203,0.21525273215956983,0.9373732612002641],"intensity":0.7373531540157273,"time":1123.3000000000009,"scaleMultiplier":0.2749137026188752,"rotation":[0,4.066123962402344,1.240666389465332]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.9881201516836882,0.9482142783235759,0.5282575397286564],"intensity":0.5504696916788817,"time":1123.3000000000009,"scaleMultiplier":0.37014034774380644,"rotation":[0,4.066123962402344,1.240666389465332]},{"type":3,"colorRampStart":[0,0,0],"colorRampEnd":[0.4215267333202064,0.3350319592282176,0.5621424815617502],"intensity":0.4279495809460059,"time":1123.3000000000009,"scaleMultiplier":0.7582216601068479,"rotation":[0,4.066123962402344,1.240666389465332]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.17865146091207862},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.1120674042031169},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.5008238954469562}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.056647800374776104,0.34630655311048025,0.7724475562572479],"intensity":0.3617661325959489,"time":288.7,"scaleMultiplier":0.32719587883605916,"rotation":[0,3.652122735977173,0.5276880860328674]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.016318449517711872,0.14285003929398948,0.3650559603702277],"intensity":0.9223188205622137,"time":1287.7000000000023,"scaleMultiplier":0.723999886090719,"rotation":[0,3.652122735977173,0.5276880860328674]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.4571891638915986,0.14118719217367476,0.4987123282626271],"intensity":0.6885911041637882,"time":1287.7000000000023,"scaleMultiplier":0.028398105498146163,"rotation":[0,3.652122735977173,0.5276880860328674]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.12308814493007958},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.10849546571262181},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.1083891037851572}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.5447364430874586,0.4188389976043254,0.8080399786122143],"intensity":0.9658278146758674,"time":144.85000000000002,"scaleMultiplier":0.6811525139082653,"rotation":[0,0.28103724122047424,2.6595070362091064]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.37120520253665745,0.7605226908344775,0.15702157677151263],"intensity":0.30999013907276085,"time":1143.850000000001,"scaleMultiplier":0.41814552862076226,"rotation":[0,0.28103724122047424,2.6595070362091064]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.25180775555782026,0.05865481472574166,0.6150651220232248],"intensity":0.5241820462513714,"time":1143.850000000001,"scaleMultiplier":1.802371877029846,"rotation":[0,0.28103724122047424,2.6595070362091064]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.4541084007360041},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.5676125430036336},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.16377876629121602}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"colorRampStart":[0,0,0],"colorRampEnd":[0.5030605890788139,0.06060393759980809,1],"intensity":0.9624938930850476,"time":103.75000000000001,"scaleMultiplier":0.8249388921806006,"rotation":[0,5.040642738342285,1.4159375429153442],"type":0},{"colorRampStart":[0,0,0],"colorRampEnd":[0.05211101355962458,0.653139792382717,0.5781841075513512],"intensity":0.6389191331341862,"time":1102.7500000000007,"scaleMultiplier":0.5353153019529595,"rotation":[0,5.040642738342285,1.4159375429153442],"type":1},{"colorRampStart":[0,0,0],"colorRampEnd":[0.6678469039034098,0.4596802373416721,0.5522393325809389],"intensity":0.8635824578581378,"time":1102.7500000000007,"scaleMultiplier":0.5120442339857986,"rotation":[0,5.040642738342285,1.4159375429153442],"type":2}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.1333039456512779},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.47508458606898785},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.7723034273367375}]},
+			{"version":2,"cubeSize":1024,"noiseScale":0.001,"numOctaves":9,"octavePeriod":[1,2,4,8,16,32,64,128,1024],"octaveScale":[1,0.125,0.125,0.0625,0.0325,0.0125,0.0125,0.0125,0.0125],"nebulaLayers":[{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.70266955322586,0.18308737338520586,0.53469282342121],"intensity":0.4500706415157766,"time":93.47500000000001,"scaleMultiplier":2.917838834944139,"rotation":[0,1.9581854343414307,0.5563454627990723]},{"type":1,"colorRampStart":[0,0,0],"colorRampEnd":[0.4254322634078562,0.6350809058640152,0.9435832377057523],"intensity":0.8162814441369847,"time":1092.4750000000006,"scaleMultiplier":0.7775635040554483,"rotation":[0,1.9581854343414307,0.5563454627990723]},{"type":0,"colorRampStart":[0,0,0],"colorRampEnd":[0.47681332589127123,0.8266637844499201,1],"intensity":0.7409461081493646,"time":1092.4750000000006,"scaleMultiplier":1.5765827968060342,"rotation":[0,1.9581854343414307,0.5563454627990723]}],"starLayers":[{"stars":100000,"sprite":"circle.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/circle.png*/,"color":[0,0,1],"intensity":0,"size":0.125,"seed":0.30858030659146607},{"stars":1000,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":2.5,"seed":0.6945619012694806},{"stars":100,"sprite":"flare-default-64.png"/*tpa=http://alteredqualia.com/xg/examples/textures/sprites/flare-default-64.png*/,"color":[0,0,1],"intensity":0,"size":5.5,"seed":0.8134639675263315}]},
+
+
+			];
+
+			var presetIndex = 0;
+
+			// patch old data
+
+			for ( var i = 0; i < presets.length; i ++ ) {
+
+				var p = presets[ i ];
+				if ( p.version !== undefined ) continue;
+
+				var starLayers = p.starLayers;
+
+				for ( var j = 0; j < starLayers.length; j ++ ) {
+
+					var sl = starLayers[ j ];
+					sl.intensity *= 0.25;
+
+					sl.sprite = sl.sprite.replace( "flare-default", "flare-default-64" );
+
+				}
+
+			}
+
+			//
+
+			var container, stats;
+			var camera, scene, renderer;
+
+			var freezeCamera = false;
+			var freezeSimulation = false;
+
+			//
+
+			var nebulaGenerator;
+
+			var skyUniforms;
+			var objectUniforms;
+			var pickUniforms;
+
+			// controls
+
+			var mouseX = 0;
+			var mouseY = 0;
+
+			var targetX = 0.0, targetY = 0.0;
+			var angle = 0.0;
+			var height = 0.0;
+			var target = new XG.Vector3();
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			//
+
+			var mouse = new XG.Vector2();
+			var tmpMat = new XG.Matrix4();
+			var tmpVec = new XG.Vector3();
+
+			var clock = new XG.Clock();
+
+			//
+
+			function init() {
+
+				var pars =
+				{
+					"width": WIDTH, "height": HEIGHT,
+					"scale": SCALE,
+					"antialias": true,
+					"tonemapping": XG.NoOperator,
+					"brightness": 1
+				};
+
+				if ( Detector.isMobile ) {
+
+					pars[ "devicePixelRatio" ] = 1.0;
+					pars[ "antialias" ] = false;
+
+				}
+
+				renderer = new XG.ForwardRenderer( pars );
+
+				renderer.domElement.style.position = "absolute";
+				renderer.domElement.style.top = MARGIN + "px";
+				renderer.domElement.style.left = "0px";
+
+				container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+
+				// performance presets
+
+				var gpuDetector = new GPUDetector();
+				gpuData = gpuDetector.detectGPU();
+
+				var isMobile = Detector.isMobile;
+
+				var widthSegmentsSky, heightSegmentsSky;
+				var widthSegmentsObj, heightSegmentsObj;
+				var cubeSize;
+				var objectDefines = {};
+
+				if ( gpuData && gpuData.rawScore >= ULTRA_THRESHOLD ) {
+
+					widthSegmentsObj = 128;
+					heightSegmentsObj = 64;
+
+					widthSegmentsSky = 32;
+					heightSegmentsSky = 16;
+
+					cubeSize = 1024;
+
+					objectDefines[ "HIGH_QUALITY" ] = true;
+
+				} else {
+
+					widthSegmentsObj = 64;
+					heightSegmentsObj = 32;
+
+					widthSegmentsSky = 16;
+					heightSegmentsSky = 8;
+
+					cubeSize = 1024;
+
+				}
+
+				if ( isMobile ) {
+
+					widthSegmentsObj = 32;
+					heightSegmentsObj = 16;
+
+					widthSegmentsSky = 16;
+					heightSegmentsSky = 8;
+
+					cubeSize = 512;
+
+				}
+
+				for ( var i = 0; i < presets.length; i ++ ) {
+
+					var p = presets[ i ];
+					p.cubeSize = cubeSize;
+
+				}
+
+				// nebula generator
+
+				nebulaGenerator = new XG.NebulaGenerator( renderer );
+
+				// initialization
+
+				if ( window.location.hash ) {
+
+					var hash = window.location.hash.substr( 1 );
+					var version = hash.substr( 0, 2 );
+					var parametersEncodedString = hash.substr( 2 );
+
+					if ( version == 'A/' ) {
+
+						var callbackDecodedParametersString = function( text ) {
+
+							var parameters = JSON.parse( text );
+							var skybox = nebulaGenerator.generateSkybox( parameters );
+							skyUniforms[ "tCube" ].value = skybox;
+							objectUniforms[ "tCube" ].value = skybox;
+
+							window.location.hash = "";
+							hideLoading();
+
+						}
+
+						readURL( parametersEncodedString, callbackDecodedParametersString );
+
+					}
+
+				} else {
+
+					//presetIndex = XG.Math.randomInt( 0, presets.length - 1 );
+					presetIndex = 3;
+					var parameters = presets[ presetIndex ];
+
+					var skybox = nebulaGenerator.generateSkybox( parameters );
+					savePermalink();
+					hideLoading();
+
+				}
+
+				// skybox scene
+
+				camera = new XG.PerspectiveCamera( 40, WIDTH / HEIGHT, 1, 3000 );
+				camera.position.z = 4;
+
+				scene = new XG.Scene();
+				scene.add( camera );
+
+				var geometryObject = new XG.SphereGeometry( 1000, widthSegmentsObj, heightSegmentsObj );
+				var geometrySky = new XG.SphereGeometry( 1000, widthSegmentsSky, heightSegmentsSky );
+
+				// skybox
+
+				var shader = XG.NebulaSkyShader;
+
+				var materialSky = new XG.ShaderMaterial( {
+
+					"uniforms"		: XG.UniformsUtils.clone( shader.uniforms ),
+					"vertexShader"	: shader.vertexShader,
+					"fragmentShader": shader.fragmentShader,
+					"side"			: XG.BackSide
+
+				} );
+
+				skyUniforms = materialSky.uniforms;
+				skyUniforms[ "tCube" ].value = skybox;
+				skyUniforms[ "brightness" ].value = BRIGHTNESS;
+
+				meshSky = new XG.Mesh( geometrySky, materialSky );
+				scene.add( meshSky );
+
+				// object
+
+				var shader = XG.NebulaObjectShader;
+
+				var materialObject = new XG.ShaderMaterial( {
+
+					"uniforms"		: XG.UniformsUtils.clone( shader.uniforms ),
+					"vertexShader"	: shader.vertexShader,
+					"fragmentShader": shader.fragmentShader,
+					"extensions"	: { "OES_standard_derivatives": true },
+					"defines"		: objectDefines
+
+				} );
+
+				objectUniforms = materialObject.uniforms;
+				objectUniforms[ "tCube" ].value = skybox;
+				objectUniforms[ "brightness" ].value = BRIGHTNESS;
+				objectUniforms[ "tDisplacement" ].value = null;
+				objectUniforms[ "displacementScale" ].value = 100;
+				objectUniforms[ "bumpScale" ].value = 0.5;
+				objectUniforms[ "gloss" ].value = 0.95;
+				objectUniforms[ "specularColor" ].value.set( 0.95, 0.95, 0.95 );
+
+
+				meshObject = new XG.Mesh( geometryObject, materialObject );
+				meshObject.scale.multiplyScalar( 0.009 );
+				scene.add( meshObject );
+
+				meshObject.renderDepth = 1;
+				meshSky.renderDepth = 2;
+
+				// stats
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'keydown', onKeyDown, false );
+
+				renderer.domElement.addEventListener( 'click', onUpdateClick, false );
+				renderer.domElement.addEventListener( 'touchmove', onTouchMove, false );
+
+				// compatibility checks & fallbacks
+
+				var bufferPars = {};
+				detectSupport( bufferPars );
+
+				// init dynamic textures
+
+				setupPicking( bufferPars );
+				setupSimulation( bufferPars );
+
+			}
+
+			//
+
+			function detectSupport( parameters ) {
+
+				var minFilter;
+				var magFilter;
+				var bufferType;
+
+				if ( renderer.supportsRGBAHalfFloatRenderTarget() ) {
+
+					bufferType = XG.HalfFloatType;
+
+					if ( renderer.supportsHalfFloatTexturesLinear() ) {
+
+						magFilter = XG.LinearFilter;
+						minFilter = XG.LinearFilter;
+
+					} else {
+
+						magFilter = XG.NearestFilter;
+						minFilter = XG.NearestFilter;
+
+					}
+
+				} else if ( renderer.supportsRGBAFloatRenderTarget() ) {
+
+					bufferType = XG.FloatType;
+
+					if ( renderer.supportsFloatTexturesLinear() ) {
+
+						magFilter = XG.LinearFilter;
+						minFilter = XG.LinearFilter;
+
+					} else {
+
+						magFilter = XG.NearestFilter;
+						minFilter = XG.NearestFilter;
+
+					}
+
+				} else {
+
+					bufferType = XG.UnsignedByteType;
+
+					magFilter = XG.LinearFilter;
+					minFilter = XG.LinearFilter;
+
+				}
+
+				parameters.minFilter = minFilter;
+				parameters.magFilter = magFilter;
+				parameters.bufferType = bufferType;
+
+			}
+
+			//
+
+			function setupSimulation( parameters ) {
+
+				var rtWidth  = 2048;
+				var rtHeight = 1024;
+
+				if ( Detector.isMobile ) {
+
+					rtWidth  = 1024;
+					rtHeight = 512;
+
+				}
+
+				var rtParams = {
+
+					"minFilter": parameters.minFilter, "magFilter": parameters.magFilter,
+					"wrapS": XG.RepeatWrapping, "wrapT": XG.RepeatWrapping,
+					"stencilBuffer": false,
+					"depthBuffer": false,
+					"format": XG.RGBAFormat,
+					"type": parameters.bufferType
+
+				};
+
+				rtSimulationCurrent = new XG.RenderTarget( rtWidth, rtHeight, rtParams );
+				rtSimulationCurrent.generateMipmaps = false;
+
+				rtSimulationOld = rtSimulationCurrent.clone();
+
+				//
+
+				var shader = XG.LiquidSimulationShader;
+
+				simulationMaterial = new XG.ShaderMaterial( {
+
+					"fragmentShader": shader.fragmentShader,
+					"vertexShader"	: shader.vertexShader,
+					"uniforms"		: XG.UniformsUtils.clone( shader.uniforms )
+
+				} );
+
+				simulationUniforms = simulationMaterial.uniforms;
+
+				var tPattern = XG.ImageUtils.loadTexture( "moonbump2k.jpg"/*tpa=http://alteredqualia.com/xg/examples/textures/space/moonbump2k.jpg*/ );
+				tPattern.wrapS = tPattern.wrapT = XG.RepeatWrapping;
+				tPattern.anisotropy = 8;
+
+				simulationUniforms[ "tDisturb" ].value = rtPick;
+				simulationUniforms[ "disturbScale" ].value = 0.05;
+				simulationUniforms[ "disturbAmplitude" ].value = 0.75;
+				simulationUniforms[ "disturbFrequency" ].value = 2.0;
+				simulationUniforms[ "disturbOffset" ].value = 0.0;
+
+				simulationUniforms[ "tPattern" ].value = tPattern;
+				simulationUniforms[ "patternScale" ].value = 0.5;
+				simulationUniforms[ "patternOffset" ].value = 0.0;
+				simulationUniforms[ "noiseScale" ].value = 0.5;
+				simulationUniforms[ "wrinkleScale" ].value = 0.02;
+
+				simulationUniforms[ "tOldSim" ].value = rtSimulationOld;
+				simulationUniforms[ "resolution" ].value.set( rtWidth, rtHeight );
+				simulationUniforms[ "dampingFactor" ].value = 0.96;
+
+				objectUniforms[ "tDisplacement" ].value = rtSimulationCurrent;
+
+			}
+
+			//
+
+			function setupPicking( parameters ) {
+
+				var shader = XG.PickShader;
+
+				var pickMat = new XG.ShaderMaterial( {
+
+					"vertexShader"	: shader.vertexShader,
+					"fragmentShader": shader.fragmentShader,
+					"uniforms"		: XG.UniformsUtils.clone( shader.uniforms )
+
+				} );
+
+				pickUniforms = pickMat.uniforms;
+
+				var rtWidth  = 2048;
+				var rtHeight = 1024;
+
+				if ( Detector.isMobile ) {
+
+					rtWidth  = 1024;
+					rtHeight = 512;
+
+				}
+
+				var rtParamsUByte = {
+
+					"minFilter": parameters.minFilter, "magFilter": parameters.magFilter,
+					"wrapS": XG.RepeatWrapping, "wrapT": XG.RepeatWrapping,
+					"stencilBuffer": false,
+					"format": XG.RGBAFormat,
+					"type": parameters.bufferType
+
+				};
+
+				rtPick = new XG.RenderTarget( rtWidth, rtHeight, rtParamsUByte );
+				rtPick.generateMipmaps = false;
+				rtPick.anisotropy = 8;
+
+				pickScene = new XG.Scene();
+
+				var geometry = new XG.SphereGeometry( 1000, 32, 16 );
+
+				pickObj = new XG.Mesh( geometry, pickMat );
+				pickObj.scale.multiplyScalar( 0.009 );
+				pickScene.add( pickObj );
+
+			}
+
+			//
+
+			function showLoading() {
+
+				loadingElement.style.display = "block";
+
+			}
+
+			function hideLoading() {
+
+				loadingElement.style.display = "none";
+
+			}
+
+
+			//
+
+			var dummyProgressFunction = function() {};
+
+			function setURL( text ) {
+
+				compressor.compress( text, 1, function( bytes ) {
+
+					var hex = convertBytesToHex( bytes );
+					permalinkElement.href = '#A/' + hex;
+
+				},
+				dummyProgressFunction );
+
+			}
+
+			function readURL( hash, callback ) {
+
+				var bytes = convertHexToBytes( hash );
+				compressor.decompress( bytes, callback,	dummyProgressFunction );
+
+			}
+
+			function convertHexToBytes( text ) {
+
+				var tmpHex, array = [];
+
+				for ( var i = 0; i < text.length; i += 2 ) {
+
+					tmpHex = text.substring( i, i + 2 );
+					array.push( parseInt( tmpHex, 16 ) );
+
+				}
+
+				return array;
+
+			}
+
+			function convertBytesToHex( byteArray ) {
+
+				var tmpHex, hex = "";
+
+				for ( var i = 0, il = byteArray.length; i < il; i ++ ) {
+
+					if ( byteArray[ i ] < 0 ) {
+
+						byteArray[ i ] = byteArray[ i ] + 256;
+
+					}
+
+					tmpHex = byteArray[ i ].toString( 16 );
+
+					// add leading zero
+
+					if ( tmpHex.length == 1 ) tmpHex = "0" + tmpHex;
+
+					hex += tmpHex;
+
+				}
+
+				return hex;
+
+			}
+
+			//
+
+			function savePermalink() {
+
+				var parameters = nebulaGenerator.getParameters();
+				var parString = JSON.stringify( parameters );
+				setURL( parString );
+
+				console.log( parString );
+
+			}
+
+			function onUpdateClick( event ) {
+
+				//randomizeSkybox();
+
+				var previousIndex = presetIndex;
+
+				do {
+
+					presetIndex = XG.Math.randomInt( 0, presets.length - 1 );
+
+				} while( presetIndex === previousIndex );
+
+
+				refreshSkybox();
+				randomizeSimulation();
+
+			}
+
+			function randomizeSimulation() {
+
+				simulationUniforms[ "wrinkleScale" ].value = XG.Math.randomFloat( 0.01, 0.1 );
+				simulationUniforms[ "dampingFactor" ].value = XG.Math.randomFloat( 0.94, 0.98 );
+
+			}
+
+			function randomizeSkybox() {
+
+				showLoading();
+
+				nebulaGenerator.randomizeSkybox();
+				savePermalink();
+
+				hideLoading();
+
+				randomizeSimulation();
+
+			}
+
+			function refreshSkybox() {
+
+				console.log( "presetIndex", presetIndex );
+
+				showLoading();
+
+				var parameters = presets[ presetIndex ];
+				var skybox = nebulaGenerator.generateSkybox( parameters );
+				skyUniforms[ "tCube" ].value = skybox;
+				objectUniforms[ "tCube" ].value = skybox;
+				savePermalink();
+
+				hideLoading();
+
+			}
+
+			//
+
+			function toggleHUD() {
+
+				if ( hudVisible ) {
+
+					infoElement.style.display = "none";
+					hudVisible = false;
+
+				} else {
+
+					infoElement.style.display = "block";
+					hudVisible = true;
+
+				}
+
+			}
+
+			//
+
+			function onKeyDown ( event ) {
+
+				switch ( event.keyCode ) {
+
+					case 32: /*space*/
+
+						randomizeSkybox()
+						break;
+
+					case 37: /*left arrow*/
+
+						presetIndex = ( presetIndex - 1 ) % presets.length;
+						if ( presetIndex < 0 ) presetIndex += presets.length;
+						refreshSkybox();
+						break;
+
+					case 39: /*right arrow*/
+
+						presetIndex = ( presetIndex + 1 ) % presets.length;
+						refreshSkybox();
+						break;
+
+					case 40: /*down arrow*/
+
+						simulationUniforms[ "dampingFactor" ].value = XG.Math.clamp( simulationUniforms[ "dampingFactor" ].value - 0.01, 0.92, 0.98 );
+						break;
+
+					case 38: /*up arrow*/
+
+						simulationUniforms[ "dampingFactor" ].value = XG.Math.clamp( simulationUniforms[ "dampingFactor" ].value + 0.01, 0.92, 0.98 );
+						break;
+
+					case 70: /*F*/
+
+						freezeCamera = !freezeCamera;
+						break;
+
+					case 83: /*S*/
+
+						freezeSimulation = !freezeSimulation;
+						break;
+
+					case 72: /*H*/
+
+						toggleHUD();
+						break;
+
+				}
+
+			};
+
+			//
+
+			function onWindowResize ( event ) {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				WIDTH = window.innerWidth;
+				HEIGHT = window.innerHeight - 2 * MARGIN;
+
+				renderer.setSize( WIDTH, HEIGHT );
+
+				camera.aspect = WIDTH / HEIGHT;
+				camera.updateProjectionMatrix();
+
+			}
+
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX ) * 1;
+				mouseY = ( event.clientY - windowHalfY ) * 1;
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = ( - ( event.clientY / window.innerHeight ) * 2 + 1 ) * ( window.innerHeight / HEIGHT );
+
+			}
+
+			//
+
+			function onTouchMove( event ) {
+
+				event.preventDefault();
+
+				var touches = event.touches;
+				var touch = touches[ 0 ];
+
+				mouseX = ( touch.clientX - windowHalfX ) * 1;
+				mouseY = ( touch.clientY - windowHalfY ) * 1;
+
+				mouse.x = ( touch.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = ( - ( touch.clientY / window.innerHeight ) * 2 + 1 ) * ( window.innerHeight / HEIGHT );
+
+			}
+
+			function updateMouse() {
+
+				tmpVec.set( mouse.x, mouse.y, -1 );
+
+				scene.updateMatrixWorld();
+				camera.projectionMatrixInverse.getInverse( camera.projectionMatrix );
+
+				tmpMat.multiply( camera.matrixWorld, camera.projectionMatrixInverse );
+				tmpMat.multiplyVector3( tmpVec );
+
+				pickUniforms.pointA.value.copy( camera.matrixWorld.getPosition() );
+				pickUniforms.pointB.value.copy( tmpVec );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				var time = clock.getElapsedTime();
+
+				// update camera
+
+				if ( ! freezeCamera ) {
+
+					targetX = mouseX * .002;
+					targetY = mouseY * .002;
+
+					angle  += 0.01 * ( targetX - angle );
+					height += 0.01 * ( targetY - height );
+
+					var x = -Math.sin( angle * 1.5 ) * 35;
+					var z =  Math.cos( angle * 1.5 ) * 35;
+					var y = 130 * height + 0;
+
+					camera.position.set( x, y, z );
+					camera.lookAt( target );
+
+				}
+
+				updateMouse();
+
+				// update picking
+
+				renderer.render( pickScene, camera, rtPick, true );
+
+				// update simulation
+
+				if ( ! freezeSimulation ) {
+
+					renderer.autoClear = false;
+
+					simulationUniforms[ "tOldSim" ].value = rtSimulationOld;
+					simulationUniforms[ "time" ].value = time;
+
+					XG.EffectComposer.quad.materials[ 0 ] = simulationMaterial;
+					renderer.render( XG.EffectComposer.scene, XG.EffectComposer.camera, rtSimulationCurrent, false );
+
+					objectUniforms[ "tDisplacement" ].value = rtSimulationCurrent;
+
+					var tmp = rtSimulationCurrent;
+					rtSimulationCurrent = rtSimulationOld;
+					rtSimulationOld = tmp;
+
+					renderer.autoClear = true;
+
+				}
+
+				// render scene
+
+				renderer.render( scene, camera );
+
+			}
+
+			init();
+			animate();
+}
+		</script>
+
+	
+
+</body></html>
